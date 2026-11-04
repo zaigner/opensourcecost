@@ -1,0 +1,569 @@
+<title>What a Free Package Costs</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+/* Layout: a statement of account. One reading column on tinted "security paper"; figures set in a ledger mono;
+   the unfunded balance is the only thing printed in red ink. The calculator breaks out to a wider two-pane sheet. */
+:root{
+  --paper:#F1F4F0;        /* faint green-grey cheque paper */
+  --sheet:#FBFCFA;        /* raised sheet for statements & calculator */
+  --ink:#16203A;          /* navy ledger ink */
+  --ink-2:#4B566B;        /* secondary ink */
+  --ink-3:#6E7889;        /* muted captions */
+  --rule:#C9D2CA;         /* ledger rule */
+  --rule-2:#E1E7E1;
+  --accent:#1F5A8A;       /* ledger blue: cost marks, links */
+  --accent-soft:#D6E3EE;
+  --deficit:#B3261E;      /* red ink: unfunded / gap only */
+  --deficit-soft:#F5DEDB;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-data:"IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --s-1:.8125rem; --s0:1.0625rem; --s1:1.25rem; --s2:1.6rem; --s3:2.25rem; --s4:clamp(2.4rem,6vw,3.6rem);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#10151D; --sheet:#161D27; --ink:#E4E9F0; --ink-2:#B1BAC8; --ink-3:#8A94A4;
+    --rule:#2E3846; --rule-2:#232B37; --accent:#79ABD6; --accent-soft:#1F3347;
+    --deficit:#F08A80; --deficit-soft:#3A2224;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#10151D; --sheet:#161D27; --ink:#E4E9F0; --ink-2:#B1BAC8; --ink-3:#8A94A4;
+  --rule:#2E3846; --rule-2:#232B37; --accent:#79ABD6; --accent-soft:#1F3347;
+  --deficit:#F08A80; --deficit-soft:#3A2224;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:var(--s0);line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 4rem}
+.wrap{max-width:46rem;margin-inline:auto}
+.wide{max-width:68rem;margin-inline:auto}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.12;margin:0}
+h1{font-size:var(--s4);font-weight:800;letter-spacing:-.02em}
+h2{font-size:var(--s3);font-weight:700;letter-spacing:-.01em}
+h3{font-size:var(--s1);font-weight:700}
+p{margin:0}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.label{font-family:var(--f-data);font-size:var(--s-1);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.num{font-family:var(--f-data);font-variant-numeric:tabular-nums}
+.red{color:var(--deficit)}
+.flow{display:flex;flex-direction:column;gap:1.1rem}
+section{padding-block:3.5rem 0}
+.sec-head{display:flex;flex-direction:column;gap:.5rem;padding-bottom:1.25rem;border-bottom:1px solid var(--rule);margin-bottom:1.5rem}
+.lede{font-size:var(--s1);color:var(--ink-2);line-height:1.5}
+.note{font-size:var(--s-1);color:var(--ink-3);line-height:1.5}
+code,.mono{font-family:var(--f-data);font-size:.9em}
+
+/* ---------- masthead ---------- */
+.mast{padding-block:3rem 0;display:flex;flex-direction:column;gap:1.25rem}
+.mast .label{display:flex;gap:1rem;flex-wrap:wrap}
+
+/* ---------- statement of account ---------- */
+.statement{background:var(--sheet);border:1px solid var(--rule);margin-top:2.25rem;padding:1.5rem 1.5rem 1.25rem}
+.statement-head{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding-bottom:.9rem;border-bottom:2px solid var(--ink)}
+.statement-head h3{font-size:var(--s1)}
+.ledger{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.ledger td{padding:.6rem 0;border-bottom:1px solid var(--rule-2);vertical-align:baseline}
+.ledger td:last-child{text-align:right;font-family:var(--f-data);white-space:nowrap;padding-left:1rem}
+.ledger .sub{display:block;font-size:var(--s-1);color:var(--ink-3)}
+.ledger tr.total td{border-bottom:none;border-top:2px solid var(--ink);padding-top:.8rem;font-weight:600}
+.ledger tr.total td:last-child{font-size:var(--s2);color:var(--deficit)}
+.stamp{display:inline-block;margin-top:1rem;font-family:var(--f-data);font-size:var(--s-1);letter-spacing:.1em;text-transform:uppercase;
+  color:var(--deficit);border:2px solid var(--deficit);padding:.25rem .6rem;transform:rotate(-2deg)}
+
+/* ---------- framework layers ---------- */
+.layers{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.layer{background:var(--sheet);padding:1.1rem 1.2rem;display:flex;flex-direction:column;gap:.45rem}
+.layer .code{font-family:var(--f-data);font-weight:600;color:var(--accent);font-size:var(--s1)}
+.layer h3{font-size:var(--s0)}
+.layer p{font-size:.95rem;color:var(--ink-2);line-height:1.5}
+.layer .q{font-family:var(--f-data);font-size:var(--s-1);color:var(--ink-3)}
+
+.formula{background:var(--sheet);border:1px solid var(--rule);padding:1rem 1.2rem;font-family:var(--f-data);font-size:.9rem;line-height:1.7;overflow-x:auto;white-space:pre}
+.formula .c{color:var(--ink-3)}
+
+/* ---------- data tables ---------- */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--rule);background:var(--sheet)}
+table.data{width:100%;border-collapse:collapse;font-size:.92rem}
+table.data th,table.data td{padding:.55rem .8rem;text-align:left;border-bottom:1px solid var(--rule-2);vertical-align:top}
+table.data th{font-family:var(--f-data);font-weight:500;font-size:var(--s-1);letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);background:var(--paper)}
+table.data td.n{text-align:right;font-family:var(--f-data);font-variant-numeric:tabular-nums;white-space:nowrap}
+table.data tr:last-child td{border-bottom:none}
+
+/* ---------- charts ---------- */
+figure{margin:0;display:flex;flex-direction:column;gap:.6rem}
+figcaption{display:flex;flex-direction:column;gap:.2rem}
+figcaption b{font-family:var(--f-display);font-size:var(--s0)}
+.chart{width:100%;overflow-x:auto}
+.chart svg{display:block;width:100%;height:auto;min-width:340px}
+.chart text{font-family:var(--f-data);font-size:12px;fill:var(--ink-2)}
+.chart .axis line{stroke:var(--rule-2)}
+.chart .axis text{fill:var(--ink-3);font-size:11px}
+.chart .mk{fill:var(--accent)}
+.chart .mk.pt{fill:var(--ink)}
+.chart .mk.def{fill:var(--deficit)}
+.chart .mk.dim{fill:var(--accent);opacity:.55}
+.chart .hit{fill:transparent;cursor:default}
+.chart .hit:hover + .mk,.chart .hit:hover ~ .val{opacity:1}
+.legend{display:flex;gap:1.1rem;flex-wrap:wrap;font-family:var(--f-data);font-size:var(--s-1);color:var(--ink-2)}
+.legend i{display:inline-block;width:.75rem;height:.75rem;border-radius:2px;margin-right:.4rem;vertical-align:-1px}
+#tip{position:fixed;pointer-events:none;z-index:20;background:var(--ink);color:var(--paper);font-family:var(--f-data);font-size:12px;
+  padding:.4rem .6rem;border-radius:4px;max-width:16rem;line-height:1.4}
+
+/* ---------- calculator ---------- */
+.calc{background:var(--sheet);border:1px solid var(--rule);display:grid;grid-template-columns:minmax(0,20rem) minmax(0,1fr)}
+.controls{padding:1.25rem;border-right:1px solid var(--rule);display:flex;flex-direction:column;gap:1rem;background:var(--paper)}
+.out{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1.5rem;min-width:0}
+.field{display:flex;flex-direction:column;gap:.3rem}
+.field label{font-family:var(--f-data);font-size:var(--s-1);color:var(--ink-2);display:flex;justify-content:space-between;gap:.5rem}
+.field label output{color:var(--ink);font-weight:600}
+.field .hint{font-size:.78rem;color:var(--ink-3);line-height:1.35}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=number],input[type=text],select{font:inherit;font-family:var(--f-data);font-size:.9rem;color:var(--ink);background:var(--sheet);
+  border:1px solid var(--rule);border-radius:3px;padding:.4rem .5rem;width:100%}
+.group-title{font-family:var(--f-display);font-weight:700;font-size:var(--s0);padding-top:.25rem}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(10.5rem,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.kpi{background:var(--sheet);padding:.8rem 1rem;display:flex;flex-direction:column;gap:.15rem}
+.kpi .v{font-family:var(--f-data);font-size:var(--s1);font-weight:600;font-variant-numeric:tabular-nums}
+.kpi .k{font-size:.8rem;color:var(--ink-3);line-height:1.3}
+.btn{font-family:var(--f-data);font-size:var(--s-1);background:transparent;color:var(--accent);border:1px solid var(--accent);border-radius:3px;padding:.35rem .7rem;cursor:pointer;align-self:flex-start}
+.btn:hover{background:var(--accent-soft)}
+
+.invoice{border:1px solid var(--rule);background:var(--sheet);padding:1.25rem 1.5rem}
+.invoice-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));gap:.9rem;margin-block:1rem 1.25rem}
+.sample-tag{font-family:var(--f-data);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;background:var(--accent-soft);color:var(--accent);padding:.15rem .45rem;border-radius:2px}
+
+ol.src{padding-left:1.4rem;display:flex;flex-direction:column;gap:.45rem;font-size:.92rem;color:var(--ink-2);margin:0}
+ul.plain{padding-left:1.2rem;margin:0;display:flex;flex-direction:column;gap:.55rem}
+
+@media (max-width:760px){
+  .calc{grid-template-columns:1fr}
+  .controls{border-right:none;border-bottom:1px solid var(--rule)}
+  .statement{padding:1.1rem}
+  .out,.invoice{padding:1.1rem}
+}
+@media (prefers-reduced-motion:no-preference){ .mk{transition:width .25s ease, x .25s ease} }
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div class="label"><span>Research brief</span><span>Open source economics</span><span>Data as of 4 Nov 2026</span></div>
+    <h1>What a free package costs</h1>
+    <p class="lede">Companies download Python packages billions of times a month at no charge. Someone still pays to keep each one working and secure. This brief sets out a method for putting a unit cost on a single package, then applies it to urllib3, the HTTP library underneath <span class="mono">requests</span>, <span class="mono">pip</span>, <span class="mono">boto3</span> and most cloud SDKs.</p>
+
+    <div class="statement" aria-label="Statement of account for urllib3">
+      <div class="statement-head">
+        <h3>Statement of account · urllib3 2.8.0</h3>
+        <span class="label">Period: Nov 2025 – Nov 2026</span>
+      </div>
+      <table class="ledger">
+        <tr><td>Downloads served<span class="sub">pypistats.org, last 30 days</span></td><td>1,323,555,688</td></tr>
+        <tr><td>PyPI packages that depend on it<span class="sub">deps.dev: 9,045 direct, 204,350 in total</span></td><td>204,350</td></tr>
+        <tr><td>Annual cost to maintain it responsibly<span class="sub">Point estimate; range <span data-o="low">$170,042</span> – <span data-o="high">$369,587</span></span></td><td id="st-asc">$257,304</td></tr>
+        <tr><td>Visible annual funding<span class="sub">Open Collective estimated annual budget</span></td><td>$15,525</td></tr>
+        <tr class="total"><td>Unfunded balance per year<span class="sub" id="st-cov">Funding covers 6.0% of the cost</span></td><td id="st-gap">$241,779</td></tr>
+      </table>
+      <span class="stamp">Past due</span>
+    </div>
+  </header>
+  </div>
+
+  <div class="wrap">
+  <section>
+    <div class="sec-head">
+      <span class="label">The question</span>
+      <h2>Why "free" is the wrong price</h2>
+    </div>
+    <div class="flow">
+      <p>An open source license sets the purchase price to zero. It does not set the cost to zero. Review, security response, releases, compatibility with new Python versions and user support all take skilled hours, and those hours are mostly unpaid. In Tidelift's 2024 survey of over 400 maintainers, 60% described themselves as unpaid hobbyists. Black Duck's audits found open source in 97% of commercial codebases in 2025, with an average of 911 components per application.</p>
+      <p>The cost does not disappear when no one pays it. It turns into slower fixes, a bus factor of one, burnout, and eventually an incident. The xz-utils backdoor of 2024 got in through exactly that gap: a lone, overworked maintainer was pressured into handing over control. CISA's response called on companies that profit from open source to fund it. When a widely used package fails, every downstream user pays the bill at once. During Log4Shell, a single US federal department reported spending 33,000 hours on its response.</p>
+      <p>The existing headline estimates answer a different question. Harvard Business School's 2024 study valued widely used open source at $4.15 billion to recreate and $8.8 trillion in demand-side value. Those are asset values for the whole ecosystem. They don't tell a company what one package costs per year, or what its fair share of that cost is. This brief builds that number.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <span class="label">The framework</span>
+      <h2>Total Cost of Stewardship</h2>
+      <p class="lede">Four measures. Each answers a different question, and each comes from public data.</p>
+    </div>
+    <div class="layers">
+      <div class="layer"><span class="code">RV</span><h3>Replacement value</h3><p>What it would cost to rebuild the code and its test suite from scratch. COCOMO II on measured source lines.</p><span class="q">Asset value. A ceiling, never a price.</span></div>
+      <div class="layer"><span class="code">ASC</span><h3>Annual sustaining cost</h3><p>What it costs each year to keep the package maintained, secure and released to a responsible standard.</p><span class="q">The unit cost. This is what gets priced.</span></div>
+      <div class="layer"><span class="code">DRC</span><h3>Downstream remediation cost</h3><p>What dependents spend each year responding to the package's security advisories.</p><span class="q">The cost of underfunding, paid by users.</span></div>
+      <div class="layer"><span class="code">FS</span><h3>Fair share</h3><p>Each commercial beneficiary's slice of the sustaining cost, under an allocation key the company can audit.</p><span class="q">The price on the invoice.</span></div>
+    </div>
+
+    <div class="flow" style="margin-top:2rem">
+      <h3>Measuring the sustaining cost three independent ways</h3>
+      <p>No single method can tell you what maintenance <em>should</em> cost, so the model takes three that rest on different evidence and uses the median as the point estimate. Where the three agree, the number is hard to dismiss.</p>
+      <ul class="plain">
+        <li><b>Activity-based.</b> Count the actual workload over the last 12 months (pull requests, issues, releases, advisories, maintainer commits) and multiply each item by a standard time. This measures the work currently being done, most of it unpaid.</li>
+        <li><b>COCOMO maintenance.</b> The standard software-estimation model sets annual maintenance effort to <i>annual change traffic</i> (the share of the codebase that changes in a year, measured from git history) times the original development effort.</li>
+        <li><b>Responsible staffing.</b> A normative floor. A critical package needs at least two maintainers, so no one person is a single point of failure, plus security response capacity and a reserve for audits and infrastructure. Packages are tiered by downloads and dependents.</li>
+      </ul>
+      <p>Every hour is priced at the fully loaded cost of a US software developer: the BLS median wage of $133,080 (May 2024) divided by 0.701, the wage share of total compensation in BLS employer cost data (December 2025). That gives <span class="num">$189,843</span> a year, <span class="num">$104.08</span> an hour, or <span class="num">$15,820</span> per COCOMO person-month of 152 hours.</p>
+      <div class="formula" role="img" aria-label="Model formulas"><span class="c"># Replacement value (COCOMO II post-architecture, nominal scale factors)</span>
+RV  = 2.94 × KSLOC^1.0997 × EAF × rate_pm          <span class="c"># EAF 1.287 = high reliability × high complexity</span>
+
+<span class="c"># Annual sustaining cost, three methods</span>
+ASC_activity = Σ (workload_i × standard_hours_i) × rate_h
+ASC_cocomo   = (lines_added_12mo ÷ total_lines) × RV
+ASC_staffing = tier_FTE × loaded_salary + tier_reserve
+ASC          = median(ASC_activity, ASC_cocomo, ASC_staffing)
+
+<span class="c"># Downstream remediation cost</span>
+DRC = advisories_12mo × direct_dependents × hours_per_advisory × rate_h
+
+<span class="c"># Fair share for organization o across its dependency tree</span>
+FS_o = α × Σ_p ASC_p × (w_o ÷ N)    <span class="c"># α commercial share, w size weight, N paying pool</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <span class="label">Case study</span>
+      <h2>urllib3, measured</h2>
+      <p class="lede">All inputs were pulled from public APIs on 4 November 2026 by the accompanying collection script.</p>
+    </div>
+    <div class="flow">
+      <div class="tbl-wrap">
+        <table class="data">
+          <thead><tr><th>Input</th><th>Value</th><th>Source</th></tr></thead>
+          <tbody>
+            <tr><td>Downloads, last 30 days</td><td class="n">1,323,555,688</td><td>pypistats.org</td></tr>
+            <tr><td>Direct / all dependent PyPI packages</td><td class="n">9,045 / 204,350</td><td>deps.dev</td></tr>
+            <tr><td>Product code / test code (source lines)</td><td class="n">7,341 / 16,150</td><td>Source of tag 2.8.0</td></tr>
+            <tr><td>Lines added / deleted, 12 months</td><td class="n">7,812 / 3,416</td><td>GitHub code frequency</td></tr>
+            <tr><td>Annual change traffic</td><td class="n">19.2%</td><td>7,812 ÷ 40,716 lines</td></tr>
+            <tr><td>Pull requests opened / merged</td><td class="n">415 / 160</td><td>GitHub search</td></tr>
+            <tr><td>Issues opened / closed</td><td class="n">63 / 54</td><td>GitHub search</td></tr>
+            <tr><td>Releases</td><td class="n">6</td><td>PyPI</td></tr>
+            <tr><td>Security advisories, 12 months (high severity)</td><td class="n">8 (7)</td><td>GitHub Advisory Database</td></tr>
+            <tr><td>Human commit authors, 12 months</td><td class="n">51</td><td>GitHub</td></tr>
+            <tr><td>Share of human commits by the top author</td><td class="n">43%</td><td>57 of 132</td></tr>
+            <tr><td>Contributors, all time</td><td class="n">423</td><td>GitHub</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <figure>
+        <figcaption><b>Advisories published per year</b><span class="note">urllib3 entries in the GitHub Advisory Database, by publication date. 2026 runs to 4 November.</span></figcaption>
+        <div class="chart" id="ch-adv"></div>
+      </figure>
+      <p>Security workload is rising fast. Six of urllib3's 22 advisories, all but one rated high, were published in 2026 alone. Each one means a fix, coordinated disclosure, a CVE and a release upstream, and an upgrade for every dependent downstream. The PSF reports the same pressure on infrastructure: PyPI's AWS spend rose 69% in 2026 as agents and CI runs surged.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <span class="label">Results</span>
+      <h2>The unit cost</h2>
+    </div>
+    <div class="flow">
+      <figure>
+        <figcaption><b>Annual sustaining cost by method, against funding received</b><span class="note">US dollars per year. The darker bar is the median, used as the point estimate. Adjust the assumptions in the calculator below and this chart updates.</span></figcaption>
+        <div class="legend"><span><i style="background:var(--accent)"></i>Estimate</span><span><i style="background:var(--ink)"></i>Point estimate (median)</span><span><i style="background:var(--deficit)"></i>Visible funding</span></div>
+        <div class="chart" id="ch-asc"></div>
+      </figure>
+      <p>The three methods land between <span class="num" data-o="low">$170,042</span> and <span class="num" data-o="high">$369,587</span> a year, about 0.9 to 2 full-time engineers. The point estimate is <b class="num" data-o="asc">$257,304</b>. The range is a finding in its own right. The activity method measures what volunteers already do. The COCOMO method measures what a codebase changing at this rate would normally need. The gap between them is roughly the work that would get done with adequate staffing.</p>
+      <p>The benchmarks agree. Germany's Sovereign Tech Agency has awarded similar critical projects €195,000 (curl), €200,000 (OpenSSH) and €223,000 (PHP, 2025–26) for scoped maintenance programs.</p>
+      <p>Rebuilding urllib3 from scratch would take about 122 person-months, a replacement value of <span class="num" data-o="rv">$1,926,282</span>. That figure is the make-versus-buy ceiling. It is not the price. As critics of the HBS study have pointed out, rebuild cost overstates what users would actually pay.</p>
+
+      <figure>
+        <figcaption><b>Where the observed hours go</b><span class="note">Activity-based estimate, hours over the last 12 months at the standard times in the model. Security response is highlighted.</span></figcaption>
+        <div class="chart" id="ch-hours"></div>
+      </figure>
+
+      <h3>The same cost, as unit prices</h3>
+      <div class="tbl-wrap">
+        <table class="data">
+          <thead><tr><th>Unit</th><th>Price</th><th>How it is derived</th></tr></thead>
+          <tbody>
+            <tr><td>Per package per year</td><td class="n" data-o="asc">$257,304</td><td>ASC point estimate</td></tr>
+            <tr><td>Per million downloads</td><td class="n" data-o="perM">$16.20</td><td>ASC ÷ 15.9 billion annual downloads</td></tr>
+            <tr><td>Per direct dependent package per year</td><td class="n" data-o="perDep">$28.45</td><td>ASC ÷ 9,045</td></tr>
+            <tr><td>Per Global 2000 company per year</td><td class="n" data-o="perG2k">$102.92</td><td>α × ASC ÷ 2,000</td></tr>
+            <tr><td>Per Python developer per year</td><td class="n" data-o="perDev">$0.0089</td><td>α × ASC ÷ 23 million (SlashData)</td></tr>
+            <tr><td>Downstream remediation cost per year</td><td class="n" data-o="drc">$7,531,275</td><td>8 advisories × 9,045 dependents × 1 h</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Two numbers frame the case. Spread across the 2,000 largest companies, keeping urllib3 healthy costs each about <b class="num" data-o="perG2k">$102.92</b> a year. A company that lost upstream maintenance and had to run its own fork would carry the full <span class="num" data-o="asc">$257,304</span> alone. Meanwhile, the open source packages that depend directly on urllib3 spend an estimated <span class="num" data-o="drc">$7.5 million</span> a year reacting to its advisories, <span data-o="lev">29</span> times what prevention would cost. That remediation figure is a floor. It counts only public PyPI packages, at one hour each, and leaves out every private corporate codebase.</p>
+    </div>
+  </section>
+  </div>
+
+  <section class="wide" id="calculator">
+    <div class="wrap sec-head" style="margin-inline:auto">
+      <span class="label">Pricing model</span>
+      <h2>Try the assumptions</h2>
+      <p class="lede">Every assumption is a control. Change any one and the whole brief recalculates, including the figures and charts above.</p>
+    </div>
+    <div class="calc">
+      <div class="controls">
+        <div class="group-title">Labor rate</div>
+        <div class="field">
+          <label for="wage">Median developer salary <output id="o-wage"></output></label>
+          <input type="range" id="wage" min="60000" max="250000" step="1000" value="133080">
+          <span class="hint">BLS median, May 2024: $133,080. Use a regional figure for non-US markets.</span>
+        </div>
+        <div class="field">
+          <label for="share">Wage share of total compensation <output id="o-share"></output></label>
+          <input type="range" id="share" min="0.5" max="0.9" step="0.005" value="0.701">
+          <span class="hint">BLS employer cost data, Dec 2025: 70.1%. A lower share means higher overhead.</span>
+        </div>
+        <div class="group-title">Workload</div>
+        <div class="field">
+          <label for="secH">Hours per security advisory <output id="o-secH"></output></label>
+          <input type="range" id="secH" min="8" max="160" step="4" value="40">
+          <span class="hint">Intake, fix, tests, coordinated disclosure, CVE, release.</span>
+        </div>
+        <div class="field">
+          <label for="fte">Responsible staffing, critical tier (FTE) <output id="o-fte"></output></label>
+          <input type="range" id="fte" min="0.5" max="3" step="0.05" value="1.25">
+          <span class="hint">Default: two maintainers at half time plus a quarter-time security role.</span>
+        </div>
+        <div class="group-title">Allocation</div>
+        <div class="field">
+          <label for="alpha">Commercial share of cost (α) <output id="o-alpha"></output></label>
+          <input type="range" id="alpha" min="0.2" max="1" step="0.05" value="0.8">
+          <span class="hint">The share of the cost assigned to commercial users. The rest is treated as a public good.</span>
+        </div>
+        <div class="field">
+          <label for="remH">Dependent hours per advisory <output id="o-remH"></output></label>
+          <input type="range" id="remH" min="0.25" max="8" step="0.25" value="1">
+          <span class="hint">Time each direct dependent spends assessing and upgrading.</span>
+        </div>
+        <button class="btn" id="reset" type="button">Reset to sourced defaults</button>
+      </div>
+      <div class="out">
+        <div class="kpis">
+          <div class="kpi"><span class="v" data-o="asc">$257,304</span><span class="k">Annual sustaining cost (point)</span></div>
+          <div class="kpi"><span class="v"><span data-o="low">$170,042</span> – <span data-o="high">$369,587</span></span><span class="k">Range across methods</span></div>
+          <div class="kpi"><span class="v red" data-o="gap">$241,779</span><span class="k">Unfunded per year</span></div>
+          <div class="kpi"><span class="v" data-o="perG2k">$102.92</span><span class="k">Per Global 2000 company per year</span></div>
+        </div>
+        <div class="tbl-wrap">
+          <table class="data">
+            <thead><tr><th>Method</th><th>FTE</th><th>Annual cost</th></tr></thead>
+            <tbody>
+              <tr><td>Activity-based (observed work)</td><td class="n" data-o="fteA">0.90</td><td class="n" data-o="ascA">$170,042</td></tr>
+              <tr><td>Responsible staffing (critical tier)</td><td class="n" data-o="fteS">1.25</td><td class="n" data-o="ascS">$257,304</td></tr>
+              <tr><td>COCOMO maintenance (19.2% change)</td><td class="n" data-o="fteC">1.95</td><td class="n" data-o="ascC">$369,587</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="invoice" aria-labelledby="inv-title">
+          <div style="display:flex;justify-content:space-between;gap:.75rem;flex-wrap:wrap;align-items:baseline">
+            <h3 id="inv-title">Fair-share invoice</h3><span class="sample-tag">Sample company, editable</span>
+          </div>
+          <p class="note" style="margin-top:.4rem">Prices a company's whole Python dependency tree. Critical packages use the point estimate above. Important and standard packages use their staffing tiers at the same labor rate.</p>
+          <div class="invoice-grid">
+            <div class="field"><label for="co">Company</label><input type="text" id="co" value="Example Co."></div>
+            <div class="field"><label for="devs">Python developers</label><input type="number" id="devs" min="1" value="500"></div>
+            <div class="field"><label for="size">Size weight (w)</label>
+              <select id="size"><option value="0.5">Under $1B revenue · 0.5</option><option value="1" selected>$1B–$50B · 1</option><option value="3">Over $50B · 3</option></select></div>
+            <div class="field"><label for="pool">Paying pool (N companies)</label><input type="number" id="pool" min="1" value="2000"></div>
+            <div class="field"><label for="nC">Critical packages</label><input type="number" id="nC" min="0" value="25"></div>
+            <div class="field"><label for="nI">Important packages</label><input type="number" id="nI" min="0" value="120"></div>
+            <div class="field"><label for="nS">Standard packages</label><input type="number" id="nS" min="0" value="600"></div>
+          </div>
+          <div class="tbl-wrap">
+            <table class="data">
+              <thead><tr><th>Line item</th><th>Qty</th><th>ASC each</th><th>Your share</th></tr></thead>
+              <tbody id="inv-body"></tbody>
+            </table>
+          </div>
+          <table class="ledger" style="margin-top:.75rem">
+            <tr><td>Equivalent per Python developer<span class="sub">Open Source Pledge minimum: $2,000 per developer, all ecosystems</span></td><td data-o="invDev">$0</td></tr>
+            <tr><td>Cost to self-maintain your critical packages instead<span class="sub">If upstream maintenance stopped and you carried each one alone</span></td><td data-o="invMake">$0</td></tr>
+            <tr class="total"><td><span data-o="invCo">Example Co.</span> annual fair share</td><td data-o="invTotal" style="color:var(--ink)">$0</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap">
+  <section>
+    <div class="sec-head">
+      <span class="label">Using the model</span>
+      <h2>How to defend the number</h2>
+    </div>
+    <div class="flow">
+      <ul class="plain">
+        <li><b>Lead with ASC, not replacement value.</b> A trillion-dollar asset figure invites the reply that nobody would ever pay it. An annual cost of about $257,000, checked three ways and in line with public grant sizes, is much harder to wave away.</li>
+        <li><b>Show the leverage.</b> The downstream remediation cost runs about 29 times the sustaining cost, using only public dependents. Funding maintenance upstream is cheaper than paying for incidents downstream.</li>
+        <li><b>Make the ask small and specific.</b> The fair share for one critical package is around $100 a year per large company. The finding is that open source is cheap to sustain. The problem is coordination, because each company assumes another will pay.</li>
+        <li><b>Price the tree, not the package.</b> Companies carry hundreds of dependencies. The invoice above turns those counts into one annual figure a budget owner can approve.</li>
+      </ul>
+      <h3>Limitations</h3>
+      <ul class="plain">
+        <li>Standard times per pull request, issue and advisory are assumptions. They are exposed as controls so readers can apply their own.</li>
+        <li>COCOMO II was calibrated on commercial projects. Volunteer projects with heavy test suites may sit outside its range.</li>
+        <li>Download counts include CI runs and mirrors, so per-download prices understate cost per real user.</li>
+        <li>deps.dev counts public PyPI dependents only. Private corporate use is invisible, so the remediation cost is a floor.</li>
+        <li>Open Collective is the only funding channel visible from outside. Maintainers may also get employer time or grants that don't show up there, so the true coverage may be higher than 6%. Of the $69,331 raised on Open Collective since 2016, about $15,900 came from one long-time maintainer.</li>
+        <li>The staffing tiers, commercial share α, size weights and paying pool are policy choices. They are not empirical measurements, and the brief presents them that way.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="label">Sources</span><h2>References</h2></div>
+    <ol class="src">
+      <li>Hoffmann, Nagle &amp; Zhou, "The Value of Open Source Software," Harvard Business School working paper 24-038 (2024); critique by C. Whitacre, <a href="https://openpath.quest/2024/questioning-the-value-of-open-source-software/">"Questioning The Value of Open Source Software"</a>.</li>
+      <li>Tidelift, <a href="https://dev.to/tidelift/60-of-maintainers-are-still-not-paid-for-their-work-35jo">2024 State of the Open Source Maintainer Report</a>.</li>
+      <li>Black Duck, <a href="https://www.blackduck.com/resources/analyst-reports/open-source-security-risk-analysis.html">Open Source Security and Risk Analysis Report</a> (2025, 2026).</li>
+      <li>CISA, <a href="https://www.cisa.gov/news-events/news/lessons-xz-utils-achieving-more-sustainable-open-source-ecosystem">Lessons from XZ Utils</a>.</li>
+      <li>US Cyber Safety Review Board, Log4j event review (2022), via <a href="https://www.scworld.com/feature/digging-into-the-numbers-one-year-after-log4shell">SC Media</a>.</li>
+      <li>Sovereign Tech Agency award figures, via <a href="https://www.phoronix.com/news/STF-2026-systemd-PHP">Phoronix</a> and agency project pages.</li>
+      <li><a href="https://opensourcepledge.com/about/">Open Source Pledge</a>, $2,000 per developer per year minimum.</li>
+      <li>US BLS, Occupational Outlook Handbook, software developers (May 2024); <a href="https://www.bls.gov/news.release/archives/ecec_03202026.htm">Employer Costs for Employee Compensation, Dec 2025</a>.</li>
+      <li>SlashData, <a href="https://www.slashdata.co/blog/global-developer-population-trends-2025-how-many-developers-are-there">Developer population trends 2025</a>.</li>
+      <li>D. Ingram, <a href="https://dustingram.com/articles/2021/04/14/powering-the-python-package-index-in-2021/">What does it take to power the Python Package Index?</a> (2021); PSF on PyPI AWS spend (2026).</li>
+      <li>B. Boehm et al., <i>Software Cost Estimation with COCOMO II</i> (2000).</li>
+      <li>Live data: pypistats.org, PyPI JSON API, deps.dev, GitHub REST API, GitHub Advisory Database, <a href="https://opencollective.com/urllib3">opencollective.com/urllib3</a>. All retrieved 4 Nov 2026.</li>
+    </ol>
+  </section>
+  </div>
+
+<div id="tip" hidden></div>
+
+<script>
+(function(){
+  // ---- measured inputs: urllib3, collected 2026-11-04 ----
+  const D = { dlMonth:1323555688, direct:9045, prMerged:160, prUnmerged:255, issues:63, releases:6, adv12:8,
+    maintCommits:67, ksloc:23.491, act:7812/40716, funding:15525, g2k:2000, pyDevs:23e6 };
+  const DEF = { wage:133080, share:0.701, secH:40, fte:1.25, alpha:0.8, remH:1 };
+  const ADV = [[2018,1],[2019,1],[2020,0],[2021,4],[2022,2],[2023,3],[2024,1],[2025,4],[2026,6]];
+  const $ = id => document.getElementById(id);
+  const usd = (v,d=0) => '$' + v.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+  const NS = 'http://www.w3.org/2000/svg';
+
+  function model(p){
+    const loaded = p.wage / p.share, hourly = loaded / 1824, perPM = loaded / 12;
+    const hours = [
+      ['PR review, merged', D.prMerged*2.5],
+      ['PR review, not merged', D.prUnmerged*0.75],
+      ['Issue triage', D.issues*1.5],
+      ['Releases', D.releases*8],
+      ['Security advisories', D.adv12*p.secH],
+      ['Maintainer engineering', D.maintCommits*4],
+      ['Upkeep: CI, deps, new Pythons', 52*4],
+      ['Community and governance', 52*2]
+    ];
+    const hTot = hours.reduce((s,h)=>s+h[1],0);
+    const pmDev = 2.94 * Math.pow(D.ksloc, 0.91+0.01*18.97) * 1.287;
+    const ascA = hTot*hourly, ascC = D.act*pmDev*perPM, ascS = p.fte*loaded + 20000;
+    const s = [ascA,ascC,ascS].slice().sort((a,b)=>a-b), asc = s[1];
+    const drc = D.adv12 * D.direct * p.remH * hourly;
+    return { loaded, hourly, hours, hTot, ascA, ascC, ascS, asc, low:s[0], high:s[2], rv:pmDev*perPM, drc,
+      fteA:hTot/1824, fteC:D.act*pmDev/12, fteS:p.fte,
+      important:0.6*loaded+7500, standard:0.15*loaded+2000 };
+  }
+
+  // ---- tooltip ----
+  const tip = $('tip');
+  function bindTip(el, text){
+    el.addEventListener('mousemove', e => { tip.textContent = text; tip.hidden = false;
+      const x = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 8); tip.style.left = x+'px'; tip.style.top = (e.clientY + 14)+'px'; });
+    el.addEventListener('mouseleave', () => { tip.hidden = true; });
+  }
+  function el(tag, attrs, parent){ const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; }
+  function niceMax(v){ const p = Math.pow(10, Math.floor(Math.log10(v))); const m = v/p; return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p; }
+  // horizontal bar with square baseline end and 4px rounded data end
+  function hbar(x,y,w,h,r){ r=Math.min(r,w,h/2); if (w<=0) return ''; return `M${x},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y+h-r}Q${x+w},${y+h} ${x+w-r},${y+h}H${x}Z`; }
+  function vbar(x,y0,w,h,r){ r=Math.min(r,h,w/2); if (h<=0) return ''; const y=y0-h; return `M${x},${y0}V${y+r}Q${x},${y} ${x+r},${y}H${x+w-r}Q${x+w},${y} ${x+w},${y+r}V${y0}Z`; }
+
+  function hbarChart(host, rows, fmt, opts){
+    host.innerHTML = '';
+    const W = 680, labW = opts.labW || 220, valW = 96, rowH = 30, barH = 16, top = 6, axisH = 24;
+    const H = top + rows.length*rowH + axisH;
+    const svg = el('svg', {viewBox:`0 0 ${W} ${H}`, role:'img', 'aria-label':opts.aria}, host);
+    const max = niceMax(Math.max(...rows.map(r=>r.v))*1.02), plotW = W - labW - valW;
+    const sx = v => labW + v/max*plotW;
+    const ticks = 4, ax = el('g',{class:'axis'},svg);
+    for (let i=0;i<=ticks;i++){ const v = max*i/ticks, x = sx(v);
+      el('line',{x1:x,x2:x,y1:top-2,y2:top+rows.length*rowH},ax);
+      const t = el('text',{x:x,y:H-6,'text-anchor':'middle'},ax); t.textContent = opts.tick(v); }
+    rows.forEach((r,i) => {
+      const y = top + i*rowH + (rowH-barH)/2;
+      const lt = el('text',{x:labW-10,y:y+barH/2+4,'text-anchor':'end'},svg); lt.textContent = r.label;
+      el('path',{d:hbar(labW,y,Math.max(0,sx(r.v)-labW),barH,4),class:'mk '+(r.cls||'')},svg);
+      const vt = el('text',{x:sx(r.v)+8,y:y+barH/2+4,style:'fill:var(--ink);font-weight:500'},svg); vt.textContent = fmt(r.v);
+      const hit = el('rect',{x:0,y:top+i*rowH,width:W,height:rowH,class:'hit'},svg); bindTip(hit, r.tip || (r.label+': '+fmt(r.v)));
+    });
+  }
+
+  function advChart(){
+    const host = $('ch-adv'); const W=680, H=210, L=34, R=10, T=22, B=28;
+    const svg = el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'Security advisories per year, 2018 to 2026'},host);
+    const max = 8, pw = W-L-R, ph = H-T-B, bw = pw/ADV.length;
+    const sy = v => T + ph - v/max*ph, ax = el('g',{class:'axis'},svg);
+    [0,2,4,6,8].forEach(v => { el('line',{x1:L,x2:W-R,y1:sy(v),y2:sy(v)},ax); const t=el('text',{x:L-8,y:sy(v)+4,'text-anchor':'end'},ax); t.textContent=v; });
+    ADV.forEach(([yr,n],i) => {
+      const x = L + i*bw + bw*0.22, w = bw*0.56;
+      el('path',{d:vbar(x,sy(0),w,sy(0)-sy(n),4),class:'mk '+(yr===2026?'pt':'dim')},svg);
+      const t = el('text',{x:x+w/2,y:H-8,'text-anchor':'middle'},svg); t.textContent = yr===2026 ? '2026*' : yr;
+      if (yr===2026 || yr===2021 || yr===2025){ const v=el('text',{x:x+w/2,y:sy(n)-6,'text-anchor':'middle',style:'fill:var(--ink);font-weight:600'},svg); v.textContent=n; }
+      const hit = el('rect',{x:L+i*bw,y:T,width:bw,height:ph,class:'hit'},svg);
+      bindTip(hit, `${yr}${yr===2026?' (to 4 Nov)':''}: ${n} advisor${n===1?'y':'ies'}`);
+    });
+  }
+
+  const ids = ['wage','share','secH','fte','alpha','remH'];
+  const outFmt = { wage:v=>usd(+v), share:v=>(v*100).toFixed(1)+'%', secH:v=>v+' h', fte:v=>(+v).toFixed(2), alpha:v=>Math.round(v*100)+'%', remH:v=>v+' h' };
+  function params(){ const p={}; ids.forEach(i=>p[i]=parseFloat($(i).value)); return p; }
+  function setOut(key, text){ document.querySelectorAll(`[data-o="${key}"]`).forEach(n=>n.textContent=text); }
+
+  function render(){
+    const p = params(); ids.forEach(i => $('o-'+i).textContent = outFmt[i]($(i).value));
+    const m = model(p), alpha = p.alpha;
+    const gap = m.asc - D.funding;
+    $('st-asc').textContent = usd(m.asc); $('st-gap').textContent = usd(gap);
+    $('st-cov').textContent = `Funding covers ${(D.funding/m.asc*100).toFixed(1)}% of the cost`;
+    const o = { asc:usd(m.asc), low:usd(m.low), high:usd(m.high), rv:usd(m.rv), gap:usd(gap),
+      perM:usd(m.asc/(D.dlMonth*12/1e6),2), perDep:usd(m.asc/D.direct,2), perG2k:usd(alpha*m.asc/D.g2k,2),
+      perDev:'$'+(alpha*m.asc/D.pyDevs).toFixed(4), drc:usd(m.drc), lev:Math.round(m.drc/m.asc),
+      ascA:usd(m.ascA), ascC:usd(m.ascC), ascS:usd(m.ascS), fteA:m.fteA.toFixed(2), fteC:m.fteC.toFixed(2), fteS:m.fteS.toFixed(2) };
+    for (const k in o) setOut(k, o[k]);
+    // the prose "$7.5 million" style figure
+    document.querySelectorAll('p [data-o="drc"]').forEach(n => n.textContent = '$'+(m.drc/1e6).toFixed(1)+' million');
+
+    const k = v => v>=1e6 ? '$'+(v/1e6).toFixed(1)+'M' : '$'+Math.round(v/1000)+'k';
+    hbarChart($('ch-asc'), [
+      {label:'Activity-based', v:m.ascA, cls:m.asc===m.ascA?'pt':'', tip:`Activity-based: ${usd(m.ascA)} (${m.fteA.toFixed(2)} FTE, ${Math.round(m.hTot).toLocaleString()} h)`},
+      {label:'Responsible staffing', v:m.ascS, cls:m.asc===m.ascS?'pt':'', tip:`Responsible staffing: ${usd(m.ascS)} (${p.fte.toFixed(2)} FTE + $20,000 reserve)`},
+      {label:'COCOMO maintenance', v:m.ascC, cls:m.asc===m.ascC?'pt':'', tip:`COCOMO maintenance: ${usd(m.ascC)} (${m.fteC.toFixed(2)} FTE at 19.2% change traffic)`},
+      {label:'Visible funding', v:D.funding, cls:'def', tip:`Open Collective estimated annual budget: ${usd(D.funding)}`}
+    ], usd, {aria:'Annual sustaining cost by method compared with funding', tick:k, labW:170});
+    const hs = m.hours.slice().sort((a,b)=>b[1]-a[1]);
+    hbarChart($('ch-hours'), hs.map(h=>({label:h[0], v:h[1], cls: h[0]==='Security advisories'?'pt':'', tip:`${h[0]}: ${Math.round(h[1]).toLocaleString()} h · ${usd(h[1]*m.hourly)}`})),
+      v=>Math.round(v).toLocaleString()+' h', {aria:'Observed maintenance hours by activity', tick:v=>Math.round(v), labW:230});
+
+    // ---- invoice ----
+    const w = parseFloat($('size').value), N = Math.max(1, parseFloat($('pool').value)||1), devs = Math.max(1, parseFloat($('devs').value)||1);
+    const lines = [['Critical packages', +$('nC').value||0, m.asc], ['Important packages', +$('nI').value||0, m.important], ['Standard packages', +$('nS').value||0, m.standard]];
+    let total = 0; const tb = $('inv-body'); tb.innerHTML = '';
+    lines.forEach(([name,q,each]) => { const share = alpha*q*each*w/N; total += share;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${name}</td><td class="n">${q.toLocaleString()}</td><td class="n">${usd(each)}</td><td class="n">${usd(share)}</td>`; tb.appendChild(tr); });
+    setOut('invTotal', usd(total)); setOut('invDev', usd(total/devs,2));
+    setOut('invMake', usd(lines[0][1]*m.asc)); setOut('invCo', ($('co').value||'Your company').trim());
+  }
+
+  advChart();
+  ids.forEach(i => $(i).addEventListener('input', render));
+  ['co','devs','size','pool','nC','nI','nS'].forEach(i => $(i).addEventListener('input', render));
+  $('reset').addEventListener('click', () => { ids.forEach(i => $(i).value = DEF[i]); render(); });
+  render();
+})();
+</script>

@@ -1,0 +1,99 @@
+﻿{
+    "package":  "urllib3",
+    "version":  "2.8.0",
+    "repo":  "urllib3/urllib3",
+    "source_ref":  "refs/tags/2.8.0",
+    "collected":  "2026-11-04T16:32:41",
+    "inputs":  {
+                   "monthly_downloads":  1323555688,
+                   "direct_dependents":  9045,
+                   "all_dependents":  204350,
+                   "stars":  4079,
+                   "forks":  1679,
+                   "open_issues_and_prs":  268,
+                   "commits_12mo":  167,
+                   "human_commits_12mo":  132,
+                   "distinct_human_authors_12mo":  51,
+                   "top_authors_12mo":  [
+                                            "illia-v=57",
+                                            "SEPURI-SAI-KRISHNA=10",
+                                            "shazow=4",
+                                            "pquentin=4",
+                                            "Ninja3047=3"
+                                        ],
+                   "bus_factor_proxy":  2,
+                   "maintainer_commits_12mo":  67,
+                   "prs_opened_12mo":  415,
+                   "prs_merged_12mo":  160,
+                   "issues_opened_12mo":  63,
+                   "issues_closed_12mo":  54,
+                   "releases_12mo":  6,
+                   "advisories_total":  22,
+                   "advisories_12mo":  8,
+                   "advisories_12mo_high_or_critical":  7,
+                   "lines_added_12mo":  7812,
+                   "lines_deleted_12mo":  3416,
+                   "product_sloc":  7341,
+                   "test_sloc":  16150,
+                   "physical_lines_all_text":  40716,
+                   "annual_funding_known":  15525
+               },
+    "rates":  {
+                  "loaded_annual":  189843,
+                  "hourly":  104.08,
+                  "per_person_month":  15820
+              },
+    "replacement_value":  {
+                              "ksloc":  23.49,
+                              "exponent":  1.0997,
+                              "effort_multiplier":  1.287,
+                              "person_months":  121.8,
+                              "cost":  1926282,
+                              "product_only_person_months":  33.9,
+                              "product_only_cost":  536056
+                          },
+    "sustaining":  {
+                       "activity_hours":  1634,
+                       "activity_breakdown_hours":  {
+                                                        "PR review (merged)":  400,
+                                                        "PR review (not merged)":  191.25,
+                                                        "Issue triage":  94.5,
+                                                        "Releases":  48,
+                                                        "Security advisories":  320,
+                                                        "Maintainer engineering":  268,
+                                                        "Upkeep (CI, deps, Python)":  208,
+                                                        "Community \u0026 governance":  104
+                                                    },
+                       "activity_fte":  0.9,
+                       "activity_cost":  170042,
+                       "annual_change_traffic":  0.192,
+                       "cocomo_maint_person_months":  23.4,
+                       "cocomo_fte":  1.95,
+                       "cocomo_cost":  369587,
+                       "tier":  "Critical",
+                       "tier_rule":  "\u003e=100M downloads/month OR \u003e=1,000 direct dependents",
+                       "tier_fte":  1.25,
+                       "tier_reserve":  20000,
+                       "standard_cost":  257304,
+                       "asc_low":  170042,
+                       "asc_point":  257304,
+                       "asc_high":  369587
+                   },
+    "downstream":  {
+                       "hours_per_dependent_per_advisory":  1,
+                       "annual_cost":  7531275,
+                       "leverage_ratio":  29.3
+                   },
+    "unit_costs":  {
+                       "per_million_downloads":  16.2,
+                       "per_direct_dependent_per_year":  28.45,
+                       "commercial_share":  0.8,
+                       "per_global2000_enterprise_per_year":  102.92,
+                       "per_python_developer_per_year":  0.0089
+                   },
+    "funding":  {
+                    "annual_funding":  15525,
+                    "coverage_ratio":  0.06,
+                    "annual_gap":  241779
+                }
+}
