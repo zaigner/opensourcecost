@@ -2,7 +2,7 @@
 
 A framework and pricing model for putting an annual unit cost on a single open source Python package, applied to **urllib3** with live data collected on 4 November 2026.
 
-- Published brief with interactive calculator: https://claude.ai/code/artifact/9609dae1-cbde-49bf-8dc2-b511fca2a5b1 (private until shared)
+- Published brief with interactive calculator: https://claude.ai/code/artifact/9609dae1-cbde-49bf-8dc2-b511fca2a5b1 (public)
 - Brief source: `true-cost-of-a-python-package.html`
 - Collection and costing: Python package `src/oss_cost/` (pixi); original PowerShell script kept in `legacy/Get-OssUnitCost.ps1`
 - urllib3 results: `results/urllib3.json`
