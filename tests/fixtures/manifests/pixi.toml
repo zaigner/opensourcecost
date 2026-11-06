@@ -1,0 +1,21 @@
+[workspace]
+name = "x"
+channels = ["conda-forge"]
+
+[dependencies]
+python = "3.12.*"
+numpy = ">=2"
+libgdal = "*"
+
+[pypi-dependencies]
+requests = "*"
+local-pkg = { path = ".", editable = true }
+
+[feature.test.dependencies]
+pytest = "*"
+
+[feature.test.pypi-dependencies]
+hypothesis = "*"
+
+[tasks]
+test = "pytest"

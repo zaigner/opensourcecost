@@ -1,0 +1,797 @@
+<title>GSIB Package Pricing Calculator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a term-sheet workbench. Assumptions rail on the left, live quote on the right; stacks on phones. */
+:root {
+  --bg: #fcfcfb;
+  --panel: #f2f3f1;
+  --ink: #111417;
+  --ink-2: #4d5156;
+  --muted: #7b8086;
+  --rule: #dfe1de;
+  --accent: #1c5cab;
+  --accent-soft: color-mix(in srgb, #1c5cab 12%, transparent);
+  --warn: #8f5400;
+  --warn-soft: #fbefd9;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1a19; --panel: #222321; --ink: #eef0ee; --ink-2: #bfc3c0; --muted: #8d928f; --rule: #363835;
+    --accent: #6da7ec; --accent-soft: color-mix(in srgb, #6da7ec 16%, transparent);
+    --warn: #f0b04a; --warn-soft: #3a2c12;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1a1a19; --panel: #222321; --ink: #eef0ee; --ink-2: #bfc3c0; --muted: #8d928f; --rule: #363835;
+  --accent: #6da7ec; --accent-soft: color-mix(in srgb, #6da7ec 16%, transparent);
+  --warn: #f0b04a; --warn-soft: #3a2c12;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1240px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; margin: 0; letter-spacing: -0.005em; }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 500; }
+a { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Masthead */
+.masthead { padding-block: 32px 24px; border-bottom: 1px solid var(--rule); display: grid; gap: 16px; }
+.masthead h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1; }
+.masthead .lede { max-width: 68ch; color: var(--ink-2); margin: 0; }
+.masthead .meta { font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.scenario-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; }
+.seg button {
+  font: 500 14px var(--font-body); color: var(--ink-2); background: transparent; border: 0; padding: 7px 16px; cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.seg button:hover:not([aria-pressed="true"]) { background: var(--panel); }
+.scenario-note { font-size: 13px; color: var(--muted); }
+
+/* Workbench layout */
+.bench { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 40px; padding-block: 28px 48px; align-items: start; }
+.controls { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); max-height: calc(100vh - 24px); overflow-y: auto; padding-right: 6px; display: grid; gap: 8px; }
+.results { display: grid; gap: 40px; min-width: 0; }
+
+/* Controls */
+details.group { border-bottom: 1px solid var(--rule); padding-block: 4px 12px; }
+details.group > summary {
+  list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding-block: 8px;
+  font: 600 15px var(--font-display); letter-spacing: 0.01em;
+}
+details.group > summary::-webkit-details-marker { display: none; }
+details.group > summary::after { content: "+"; font: 400 18px var(--font-mono); color: var(--muted); }
+details.group[open] > summary::after { content: "−"; }
+.ctl { display: grid; gap: 2px; padding-block: 8px; }
+.ctl-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.ctl label { font-size: 13.5px; color: var(--ink); }
+.ctl output { font: 500 13.5px var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ctl .base { font-size: 12px; color: var(--muted); min-height: 1em; }
+.ctl.changed label { color: var(--accent); }
+.ctl.changed output { color: var(--accent); }
+input[type="range"] { width: 100%; accent-color: var(--accent); margin: 4px 0 0; }
+.toggle { display: flex; gap: 10px; align-items: center; font-size: 13.5px; padding-block: 8px; }
+.toggle input { accent-color: var(--accent); width: 16px; height: 16px; }
+.reset { font: 500 13px var(--font-body); color: var(--accent); background: none; border: 0; padding: 4px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Headline */
+.headline { display: grid; gap: 20px; }
+.headline .big { font: 600 clamp(44px, 7vw, 72px)/1 var(--font-display); letter-spacing: -0.02em; }
+.headline .big small { font: 500 18px var(--font-body); color: var(--muted); letter-spacing: 0; margin-left: 6px; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--rule); }
+.stat { padding: 12px 16px 4px 0; display: grid; gap: 2px; }
+.stat + .stat { padding-left: 16px; border-left: 1px solid var(--rule); }
+.stat .v { font: 500 20px var(--font-mono); font-variant-numeric: tabular-nums; }
+.stat .k { font-size: 12.5px; color: var(--muted); }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 4px 10px; border-radius: 999px; }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.ok { background: var(--accent-soft); color: var(--accent); }
+
+/* Section heads */
+.sec { display: grid; gap: 14px; }
+.sec-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px; }
+.sec-head h2 { font-size: 21px; }
+.sec-head p { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 62ch; }
+
+/* Range: floor, fair, ceiling */
+.range { position: relative; height: 92px; margin-inline: 4px; }
+.range .track { position: absolute; left: 0; right: 0; top: 44px; height: 4px; border-radius: 2px; background: var(--rule); }
+.range .zone { position: absolute; top: 36px; height: 20px; background: var(--accent-soft); border-radius: 4px; }
+.range .mark { position: absolute; top: 34px; width: 2px; height: 24px; background: var(--ink-2); transform: translateX(-1px); }
+.range .mark.fair { width: 4px; height: 32px; top: 30px; background: var(--accent); border-radius: 2px; transform: translateX(-2px); }
+.range .lbl { position: absolute; font-size: 12.5px; white-space: nowrap; line-height: 1.25; }
+.range .lbl b { display: block; font: 500 14px var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink); }
+.range .lbl.above { top: 0; }
+.range .lbl.below { top: 62px; }
+.range .lbl { color: var(--muted); }
+.range .lbl.fair, .range .lbl.fair b { color: var(--accent); }
+
+/* Module breakdown */
+.stack { display: flex; gap: 2px; height: 30px; background: var(--bg); }
+.stack div { min-width: 0; height: 100%; }
+.stack div:first-child { border-radius: 4px 0 0 4px; }
+.stack div:last-child { border-radius: 0 4px 4px 0; }
+.legend-table td:first-child { width: 22px; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; }
+.tip {
+  position: fixed; pointer-events: none; z-index: 20; background: var(--ink); color: var(--bg); font-size: 13px; padding: 6px 10px;
+  border-radius: 6px; max-width: 260px; line-height: 1.35;
+}
+
+/* Tables */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); padding: 8px 12px 8px 0; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+td.r, th.r { text-align: right; }
+td.num, td .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+tr.total td { font-weight: 600; border-bottom: 0; border-top: 2px solid var(--ink); }
+tr.sub td { color: var(--ink-2); font-style: italic; }
+td .desc { display: block; color: var(--muted); font-size: 12.5px; }
+.tag { display: inline-block; font-size: 11.5px; font-weight: 500; padding: 1px 7px; border-radius: 4px; border: 1px solid var(--rule); color: var(--ink-2); margin-right: 4px; white-space: nowrap; }
+.tag.dormant { border-color: var(--warn); color: var(--warn); }
+.search { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.search input {
+  font: 15px var(--font-body); color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 6px;
+  padding: 8px 12px; width: min(100%, 320px);
+}
+.search .count { font-size: 13px; color: var(--muted); }
+
+.notes { border-top: 1px solid var(--rule); padding-block: 20px 8px; color: var(--ink-2); font-size: 13.5px; display: grid; gap: 8px; max-width: 80ch; }
+.notes p { margin: 0; }
+
+/* Manifest panel */
+.manifest { display: grid; gap: 14px; padding: 20px; border: 1px solid var(--rule); border-radius: 8px; background: var(--panel); }
+.drop {
+  display: grid; gap: 4px; place-items: center; text-align: center; padding: 28px 16px; cursor: pointer;
+  border: 1.5px dashed color-mix(in srgb, var(--ink-2) 45%, transparent); border-radius: 8px; background: var(--bg);
+}
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.drop-main { font-weight: 500; }
+.drop-main u { color: var(--accent); text-underline-offset: 3px; }
+.drop-sub { font-size: 13px; color: var(--muted); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.mf-actions { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+.link { font: 500 13.5px var(--font-body); color: var(--accent); background: none; border: 0; padding: 2px 0; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.btn { font: 500 14px var(--font-body); color: var(--bg); background: var(--ink); border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; justify-self: start; }
+.mf-paste { display: grid; gap: 8px; }
+.mf-paste textarea {
+  font: 13.5px/1.5 var(--font-mono); color: var(--ink); background: var(--bg); border: 1px solid var(--rule); border-radius: 6px;
+  padding: 10px 12px; width: 100%; resize: vertical;
+}
+.mf-error { color: var(--warn); font-size: 13.5px; }
+.mf-files td { background: transparent; }
+.mf-files .x { font: 500 16px var(--font-mono); color: var(--muted); background: none; border: 0; cursor: pointer; padding: 0 4px; }
+.mf-files .x:hover { color: var(--ink); }
+.mf-options { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
+.mf-options .opt-label { font-size: 13px; color: var(--muted); margin-right: 8px; }
+.mf-summary { margin: 0; font-size: 14px; color: var(--ink-2); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips .tag { font-family: var(--font-mono); }
+.empty { padding: 24px 0; color: var(--ink-2); max-width: 60ch; }
+.results-body { display: grid; gap: 40px; min-width: 0; }
+.tag.unlisted { border-style: dashed; }
+.ctl.disabled { opacity: 0.45; }
+
+/* Phone: compact live price bar, controls before results */
+.ticker { display: none; }
+@media (max-width: 900px) {
+  .bench { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .controls { position: static; max-height: none; overflow: visible; padding-right: 0; }
+  .ticker {
+    display: flex; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; justify-content: space-between; align-items: baseline;
+    gap: 12px; background: var(--bg); border-bottom: 1px solid var(--rule); padding-block: 10px; margin-inline: -16px; padding-inline: 16px;
+  }
+  .ticker .v { font: 600 22px var(--font-display); }
+  .ticker .k { font-size: 12.5px; color: var(--muted); }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 11; background: var(--bg); }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stat:nth-child(3) { padding-left: 0; border-left: 0; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .stack div, .range .zone, .range .mark, .range .lbl { transition: width 160ms ease, left 160ms ease; }
+}
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div class="eyebrow">Vendor maintenance pricing · Python open source</div>
+    <h1>GSIB Package Pricing Calculator</h1>
+    <p class="lede">What a global systemically important bank should pay a vendor to maintain its Python dependencies for a year. Every package in the portfolio is repriced as you change the assumptions.</p>
+    <div class="meta">
+      <span id="meta-portfolio"></span>
+      <span>Method: <a href="https://github.com/zaigner/opensourcecost/blob/main/docs/pricing-model.md" target="_blank" rel="noopener">pricing model</a></span>
+      <span>Assumptions: <a href="https://github.com/zaigner/opensourcecost/blob/main/assumptions/gsib_vendor.toml" target="_blank" rel="noopener">gsib_vendor.toml</a></span>
+    </div>
+    <div class="scenario-row">
+      <div class="seg" role="group" aria-label="Scenario">
+        <button type="button" id="sc-low" data-scenario="low" aria-pressed="false">Low</button>
+        <button type="button" id="sc-base" data-scenario="base" aria-pressed="true">Base</button>
+        <button type="button" id="sc-high" data-scenario="high" aria-pressed="false">High</button>
+      </div>
+      <span class="scenario-note" id="scenario-note"></span>
+    </div>
+    <div class="scenario-row">
+      <div class="seg" role="group" aria-label="Portfolio to price">
+        <button type="button" id="src-proxy" data-source="proxy" aria-pressed="true">Top PyPI packages</button>
+        <button type="button" id="src-manifest" data-source="manifest" aria-pressed="false">Your manifests</button>
+      </div>
+      <span class="scenario-note" id="source-note"></span>
+    </div>
+  </header>
+
+  <div class="ticker" aria-hidden="true">
+    <span><span class="v" id="tk-fair"></span> <span class="k">fair price / year</span></span>
+    <span class="k" id="tk-ratio"></span>
+  </div>
+
+  <div class="bench">
+    <aside class="controls" id="controls" aria-label="Assumptions"></aside>
+
+    <section class="results">
+      <div class="manifest" id="manifest-panel" hidden>
+        <div class="sec-head">
+          <h2>Your manifests</h2>
+          <p>Add requirements files, pyproject.toml, pixi.toml, Pipfile, environment.yml, setup.cfg or setup.py, or lock files from uv, Poetry, PDM, Pipenv, pixi or conda-lock. Lock files list transitive dependencies, which the vendor maintains too. Files are read in your browser and are not uploaded anywhere.</p>
+        </div>
+        <label class="drop" id="drop" for="mf-file">
+          <input type="file" id="mf-file" class="sr-only" multiple>
+          <span class="drop-main">Drop manifest files here or <u>choose files</u></span>
+          <span class="drop-sub">Add as many as you like. Packages are merged and counted once.</span>
+        </label>
+        <div class="mf-actions">
+          <button type="button" class="link" id="mf-paste-toggle" aria-expanded="false">Paste a list instead</button>
+          <button type="button" class="link" id="mf-sample">Load a sample manifest</button>
+          <button type="button" class="link" id="mf-clear" hidden>Remove all files</button>
+        </div>
+        <div class="mf-paste" id="mf-paste" hidden>
+          <label for="mf-text" class="sr-only">Pasted manifest</label>
+          <textarea id="mf-text" rows="7" placeholder="Paste a requirements list, pip freeze output, or the contents of any supported manifest"></textarea>
+          <button type="button" class="btn" id="mf-add">Add pasted text</button>
+        </div>
+        <div class="mf-error" id="mf-error" role="alert" hidden></div>
+        <div class="tbl-wrap" id="mf-files-wrap" hidden>
+          <table class="mf-files">
+            <thead><tr><th>File</th><th>Format</th><th class="r">Packages</th><th class="r">Skipped</th><th><span class="sr-only">Remove</span></th></tr></thead>
+            <tbody id="mf-files"></tbody>
+          </table>
+        </div>
+        <div class="mf-options" id="mf-options" hidden>
+          <div>
+            <span class="opt-label">Price as</span>
+            <div class="seg" role="group" aria-label="Price as">
+              <button type="button" data-mode="program" aria-pressed="true">Share of the bank-wide program</button>
+              <button type="button" data-mode="standalone" aria-pressed="false">Standalone engagement</button>
+            </div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="mf-unlisted" checked> Include packages not in the dataset</label>
+        </div>
+        <p class="mf-summary" id="mf-summary" hidden></p>
+        <div class="chips" id="mf-unlisted-list" hidden></div>
+      </div>
+
+      <div class="empty" id="mf-empty" hidden>
+        <p>Add a manifest above to see what the vendor service would cost for those packages. Switch back to <b>Top PyPI packages</b> to see the full proxy portfolio.</p>
+      </div>
+
+      <div class="results-body" id="results-body">
+      <div class="headline">
+        <div class="eyebrow" id="h-label">Fair price per year</div>
+        <div class="big num" id="h-fair"></div>
+        <div id="h-chip"></div>
+        <div class="stats">
+          <div class="stat"><span class="v" id="h-per"></span><span class="k">per package</span></div>
+          <div class="stat"><span class="v" id="h-floor"></span><span class="k">vendor cost floor</span></div>
+          <div class="stat"><span class="v" id="h-ceiling"></span><span class="k">in-house ceiling</span></div>
+          <div class="stat"><span class="v" id="h-fte"></span><span class="k">vendor effort, FTE</span></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head">
+          <h2>Where the price sits</h2>
+          <p>Below the floor the vendor loses money. Above the ceiling the bank should do the work itself. The shaded band is the room for negotiation.</p>
+        </div>
+        <div class="range" id="range" role="img"></div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head">
+          <h2>What the bank pays for</h2>
+          <p>Fair price split by service module, including each module's share of margin and risk load.</p>
+        </div>
+        <div class="stack" id="stack" role="img"></div>
+        <div class="tbl-wrap">
+          <table class="legend-table">
+            <thead><tr><th></th><th>Module</th><th class="r">Fair price</th><th class="r">Share</th></tr></thead>
+            <tbody id="modules"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head">
+          <h2>By tier</h2>
+          <p>Tiers follow monthly downloads: critical at 100M or more, important at 5M or more. Dormant packages have had no release for the set number of months.</p>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Tier</th><th class="r">Packages</th><th class="r">Per package</th><th class="r">Fair price</th><th class="r">Cost floor</th><th class="r">In-house ceiling</th></tr></thead>
+            <tbody id="tiers"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sec">
+        <div class="sec-head">
+          <h2>Package prices</h2>
+          <p id="pkg-note">Each package's own annual price under the current assumptions.</p>
+        </div>
+        <div class="search">
+          <input id="pkg-search" type="search" placeholder="Search packages, e.g. requests" aria-label="Search packages" autocomplete="off">
+          <span class="count" id="pkg-count"></span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Package</th><th>Tier</th><th class="r">Advisories / yr</th><th class="r">Cost floor</th><th class="r">Fair price</th><th class="r">In-house</th></tr></thead>
+            <tbody id="pkgs"></tbody>
+          </table>
+        </div>
+        <button type="button" class="link" id="pkg-more" hidden></button>
+      </div>
+      </div>
+
+      <div class="notes">
+        <p>Proxy portfolio: the top PyPI packages by monthly downloads, enriched with PyPI release history and GitHub security advisories from the last 36 months. A bank's real inventory can be priced with the same model from the repository.</p>
+        <p>Vendor client counts, adoption and hour standards are estimates. Market price points come from third-party listings. The model and its limitations are documented in the repository.</p>
+      </div>
+    </section>
+  </div>
+</div>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+/*__MODEL__*/
+</script>
+<script>
+(function () {
+  "use strict";
+  const DATA = /*__DATA__*/null;
+  const ASSUMPTIONS = /*__ASSUMPTIONS__*/null;
+  const M = window.PricingModel;
+  const N_ALL = DATA.name.length;
+
+  const MODULE_INFO = {
+    curation_and_compliance: ["Curation and compliance", "Monitoring, rebuilds from source, signing, SBOM and licence review", "--s1"],
+    vulnerability_response: ["Vulnerability response", "Advisory triage, VEX statements, fixed rebuilds", "--s2"],
+    maintainer_of_last_resort: ["Maintainer of last resort", "Keeping dormant packages working and patched", "--s3"],
+    bank_backports_and_support: ["Bank backports and support", "Fixes on older versions the bank runs, tickets, audit evidence", "--s4"],
+    service_fixed: ["Service fixed costs", "Account management, 24x7 on-call share, audit support, platform", "--s5"],
+    upstream_funding: ["Upstream funding", "Bank's fair share passed to maintainers, at cost", "--s6"],
+  };
+  const TIER_LABEL = { critical: "Critical", important: "Important", standard: "Standard" };
+
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+  const getPath = (o, p) => p.split(".").reduce((x, k) => x[k], o);
+  const setPath = (o, p, v) => { const ks = p.split("."); const last = ks.pop(); ks.reduce((x, k) => x[k], o)[last] = v; };
+  const DEFAULT_OPT = { topN: DATA.proxyN || N_ALL, retireDormant: 0, ticketMult: 1, lastResortMult: 1 };
+
+  const PROXY_N = DATA.proxyN || N_ALL;
+  const INDEX = new Map(DATA.name.map((n, i) => [n, i]));
+  const MP = window.ManifestParser;
+  const UNLISTED_ROW = { dl: 0, rel: 2, msr: null, nat: 0, cop: 0, ina: 0, a12: 0, a36: 0 };
+
+  const state = {
+    a: clone(ASSUMPTIONS.base), opt: { ...DEFAULT_OPT }, scenario: "base",
+    source: "proxy",
+    mf: { files: [], mode: "program", includeUnlisted: true, showAll: false, nextId: 1 },
+  };
+
+  // ---------- formatting ----------
+  const fmtInt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 });
+  const money = (v) => "$" + fmtInt.format(Math.round(v));
+  const moneyShort = (v) => Math.abs(v) >= 1e6 ? "$" + (v / 1e6).toFixed(2) + "M" : money(v);
+  const pct = (v) => Math.round(v * 100) + "%";
+  const num = (d) => (v) => (+v).toFixed(d);
+
+  // ---------- control definitions ----------
+  const CONTROLS = [
+    { group: "Portfolio", open: true, items: [
+      { id: "topN", opt: "topN", label: "Top PyPI packages in scope", min: 250, max: N_ALL, step: 1, fmt: (v) => fmtInt.format(v), hint: "Ranked by monthly downloads" },
+      { id: "retire", opt: "retireDormant", label: "Dormant packages retired by the bank", min: 0, max: 1, step: 0.05, fmt: pct },
+    ]},
+    { group: "Sharing across the vendor's clients", open: true, items: [
+      { id: "clients", path: "engagement.vendor_clients", label: "Vendor clients sharing the work", min: 1, max: 100, step: 1, fmt: num(0) },
+      { id: "weight", path: "engagement.bank_weight", label: "Bank's weight vs an average client", min: 0.5, max: 5, step: 0.25, fmt: (v) => (+v).toFixed(2) + "×" },
+      { id: "adopt-c", path: "adoption.share.critical", label: "Clients using critical packages", min: 0, max: 1, step: 0.05, fmt: pct },
+      { id: "adopt-i", path: "adoption.share.important", label: "Clients using important packages", min: 0, max: 1, step: 0.05, fmt: pct },
+      { id: "adopt-s", path: "adoption.share.standard", label: "Clients using standard packages", min: 0, max: 1, step: 0.05, fmt: pct },
+    ]},
+    { group: "Rates and margin", open: true, items: [
+      { id: "vrate", path: "rates.vendor_hourly_cost", label: "Vendor engineer cost per hour", min: 60, max: 250, step: 5, fmt: (v) => "$" + v },
+      { id: "brate", path: "rates.bank_hourly_cost", label: "Bank engineer cost per hour", min: 80, max: 350, step: 5, fmt: (v) => "$" + v, hint: "Used for the in-house ceiling" },
+      { id: "margin", path: "pricing.target_margin", label: "Vendor gross margin", min: 0, max: 0.6, step: 0.01, fmt: pct },
+    ]},
+    { group: "Bank footprint", open: false, items: [
+      { id: "vl-c", path: "dedicated_hours.version_lines.critical", label: "Versions in production, critical", min: 1, max: 6, step: 0.5, fmt: num(1) },
+      { id: "vl-i", path: "dedicated_hours.version_lines.important", label: "Versions in production, important", min: 1, max: 6, step: 0.5, fmt: num(1) },
+      { id: "vl-s", path: "dedicated_hours.version_lines.standard", label: "Versions in production, standard", min: 1, max: 6, step: 0.5, fmt: num(1) },
+      { id: "tickets", opt: "ticketMult", label: "Support tickets", min: 0, max: 4, step: 0.25, fmt: (v) => (+v).toFixed(2) + "× base" },
+    ]},
+    { group: "Dormant packages", open: false, items: [
+      { id: "dormant", path: "classification.dormant_months", label: "Dormant after months without a release", min: 12, max: 60, step: 6, fmt: num(0) },
+      { id: "lastresort", opt: "lastResortMult", label: "Upkeep hours for dormant packages", min: 0, max: 4, step: 0.25, fmt: (v) => (+v).toFixed(2) + "× base" },
+    ]},
+    { group: "Security advisories", open: false, items: [
+      { id: "trend", path: "advisories.trend_multiplier", label: "Advisory volume trend", min: 0.5, max: 3, step: 0.1, fmt: (v) => (+v).toFixed(1) + "×" },
+      { id: "cred", path: "advisories.credibility", label: "Weight on each package's own history", min: 0, max: 1, step: 0.05, fmt: pct },
+    ]},
+    { group: "Upstream funding", open: false, items: [
+      { id: "uf-on", path: "upstream_funding.enabled", label: "Pass funding through to maintainers", toggle: true },
+      { id: "uf-w", path: "upstream_funding.bank_size_weight", label: "Bank size vs average Global 2000 company", min: 0, max: 20, step: 0.5, fmt: (v) => (+v).toFixed(1) + "×" },
+    ]},
+  ];
+  const ALL_CTL = CONTROLS.flatMap((g) => g.items);
+  const read = (c) => (c.opt ? state.opt[c.opt] : getPath(state.a, c.path));
+  const baseVal = (c) => (c.opt ? DEFAULT_OPT[c.opt] : getPath(ASSUMPTIONS.base, c.path));
+
+  // ---------- build controls ----------
+  const host = document.getElementById("controls");
+  for (const g of CONTROLS) {
+    const d = document.createElement("details");
+    d.className = "group"; d.open = g.open;
+    d.innerHTML = `<summary>${g.group}</summary>`;
+    for (const c of g.items) {
+      const row = document.createElement("div");
+      if (c.toggle) {
+        row.className = "toggle";
+        row.innerHTML = `<input type="checkbox" id="${c.id}"><label for="${c.id}">${c.label}</label>`;
+        row.querySelector("input").addEventListener("change", (e) => { setPath(state.a, c.path, e.target.checked); custom(); });
+      } else {
+        row.className = "ctl";
+        row.innerHTML = `<div class="ctl-head"><label for="${c.id}">${c.label}</label><output for="${c.id}" id="${c.id}-out"></output></div>
+          <input type="range" id="${c.id}" min="${c.min}" max="${c.max}" step="${c.step}">
+          <div class="base" id="${c.id}-base"></div>`;
+        row.querySelector("input").addEventListener("input", (e) => {
+          const v = +e.target.value;
+          if (c.opt) state.opt[c.opt] = v; else setPath(state.a, c.path, v);
+          custom();
+        });
+      }
+      c.row = row;
+      d.appendChild(row);
+    }
+    host.appendChild(d);
+  }
+  const reset = document.createElement("button");
+  reset.className = "reset"; reset.type = "button"; reset.textContent = "Reset to base assumptions";
+  reset.addEventListener("click", () => applyScenario("base"));
+  host.appendChild(reset);
+
+  function syncControls() {
+    for (const c of ALL_CTL) {
+      const v = read(c), el = document.getElementById(c.id);
+      if (c.toggle) { el.checked = !!v; continue; }
+      el.value = v;
+      document.getElementById(c.id + "-out").textContent = c.fmt(v);
+      const changed = Math.abs(v - baseVal(c)) > 1e-9;
+      c.row.classList.toggle("changed", changed);
+      document.getElementById(c.id + "-base").textContent = changed ? "Base: " + c.fmt(baseVal(c)) : (c.hint || "");
+    }
+    const topN = ALL_CTL.find((c) => c.id === "topN");
+    const manifestMode = state.source === "manifest";
+    topN.row.classList.toggle("disabled", manifestMode);
+    document.getElementById("topN").disabled = manifestMode;
+    if (manifestMode) document.getElementById("topN-base").textContent = "Not used when pricing your manifests";
+  }
+
+  // ---------- scenarios ----------
+  const SCENARIO_NOTE = {
+    base: "The assumptions in gsib_vendor.toml.",
+    low: "More clients sharing the work, thinner margin, fewer versions in production.",
+    high: "Fewer clients sharing, wider margin, faster advisory growth, more versions, higher rates.",
+    custom: "Custom assumptions. Changed values are highlighted.",
+  };
+  function applyScenario(name) {
+    state.a = clone(ASSUMPTIONS.base);
+    state.opt = { ...DEFAULT_OPT };
+    for (const [k, v] of Object.entries(ASSUMPTIONS.scenarios[name] || {})) setPath(state.a, k, clone(v));
+    state.scenario = name;
+    syncControls(); render();
+  }
+  function custom() { state.scenario = "custom"; syncControls(); render(); }
+  document.querySelectorAll("button[data-scenario]").forEach((b) => b.addEventListener("click", () => applyScenario(b.dataset.scenario)));
+
+  // ---------- render ----------
+  const $ = (id) => document.getElementById(id);
+  let last = null, lastData = DATA;
+
+  function render() {
+    document.querySelectorAll("button[data-scenario]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.scenario === state.scenario)));
+    document.querySelectorAll("button[data-source]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.source === state.source)));
+    $("scenario-note").textContent = SCENARIO_NOTE[state.scenario];
+    const manifestMode = state.source === "manifest";
+    $("manifest-panel").hidden = !manifestMode;
+    $("source-note").textContent = manifestMode
+      ? `Your packages are matched against the top ${fmtInt.format(N_ALL)} PyPI packages.`
+      : `The ${fmtInt.format(state.opt.topN)} most-downloaded PyPI packages stand in for a bank's inventory.`;
+    $("meta-portfolio").textContent = manifestMode
+      ? `Reference data: top ${fmtInt.format(N_ALL)} PyPI packages · as of ${DATA.asOf}`
+      : `Proxy portfolio: top ${fmtInt.format(state.opt.topN)} PyPI packages · data as of ${DATA.asOf}`;
+
+    let r, data = DATA, label = "Fair price per year";
+    if (manifestMode) {
+      const mf = manifestPortfolio();
+      renderManifestPanel(mf);
+      const hasPackages = mf.data && mf.data.name.length > 0;
+      $("mf-empty").hidden = hasPackages;
+      $("results-body").hidden = !hasPackages;
+      if (!hasPackages) { last = null; $("tk-fair").textContent = "–"; $("tk-ratio").textContent = "Add a manifest"; return; }
+      const opt = { ...state.opt, topN: mf.data.name.length };
+      if (state.mf.mode === "program") {
+        opt.allocation = M.price(DATA, state.a, { ...state.opt, topN: PROXY_N }).allocation;
+      }
+      r = M.price(mf.data, state.a, opt);
+      data = mf.data;
+      label = `Fair price per year · ${fmtInt.format(mf.data.name.length)} packages from your manifests` +
+        (state.mf.mode === "program" ? ", as part of the bank-wide program" : ", standalone");
+    } else {
+      $("mf-empty").hidden = true;
+      $("results-body").hidden = false;
+      r = M.price(DATA, state.a, state.opt);
+    }
+    last = r; lastData = data;
+    const t = r.total, ratio = t.fair / t.ceiling;
+    $("h-label").textContent = label;
+
+    $("h-fair").innerHTML = `${moneyShort(t.fair)}<small>per year</small>`;
+    $("h-per").textContent = money(t.fair / t.packages);
+    $("h-floor").textContent = moneyShort(t.floor);
+    $("h-ceiling").textContent = moneyShort(t.ceiling);
+    $("h-fte").textContent = r.vendorFte.toFixed(1);
+    $("tk-fair").textContent = moneyShort(t.fair);
+    $("tk-ratio").textContent = pct(ratio) + " of in-house cost";
+    $("h-chip").innerHTML = ratio >= 0.8
+      ? `<span class="chip warn">▲ Fair price is ${pct(ratio)} of the in-house cost. Building it in house is close to competitive.</span>`
+      : `<span class="chip ok">● Fair price is ${pct(ratio)} of what the bank would spend doing it alone.</span>`;
+
+    renderRange(t);
+    renderModules(r.modules, t.fair);
+    renderTiers(r);
+    renderPackages();
+  }
+
+  function renderRange(t) {
+    const max = Math.max(t.ceiling, t.fair) * 1.08;
+    const x = (v) => (v / max) * 100;
+    const place = (v) => { const p = x(v); return p > 82 ? `left:${p}%;transform:translateX(-100%)` : p < 12 ? `left:${p}%` : `left:${p}%;transform:translateX(-50%)`; };
+    const el = $("range");
+    el.setAttribute("aria-label", `Cost floor ${money(t.floor)}, fair price ${money(t.fair)}, in-house ceiling ${money(t.ceiling)}`);
+    el.innerHTML = `<div class="track"></div>
+      <div class="zone" style="left:${x(t.floor)}%;width:${Math.max(0, x(t.ceiling) - x(t.floor))}%"></div>
+      <div class="mark" style="left:${x(t.floor)}%"></div>
+      <div class="mark" style="left:${x(t.ceiling)}%"></div>
+      <div class="mark fair" style="left:${x(t.fair)}%"></div>
+      <div class="lbl above fair" style="${place(t.fair)}">Fair price<b>${moneyShort(t.fair)}</b></div>
+      <div class="lbl below" style="${place(t.floor)}">Cost floor<b>${moneyShort(t.floor)}</b></div>
+      <div class="lbl below" style="${place(t.ceiling)}">In-house ceiling<b>${moneyShort(t.ceiling)}</b></div>`;
+  }
+
+  function renderModules(mods, fair) {
+    const stack = $("stack"), body = $("modules");
+    stack.innerHTML = ""; body.innerHTML = "";
+    stack.setAttribute("aria-label", "Fair price by module: " + M.MODULES.map((m) => `${MODULE_INFO[m][0]} ${money(mods[m])}`).join(", "));
+    for (const m of M.MODULES) {
+      const [label, desc, color] = MODULE_INFO[m];
+      const v = mods[m], share = fair ? v / fair : 0;
+      if (share > 0.0005) {
+        const seg = document.createElement("div");
+        seg.style.width = share * 100 + "%";
+        seg.style.background = `var(${color})`;
+        seg.dataset.tip = `${label}: ${money(v)} (${(share * 100).toFixed(1)}%)`;
+        stack.appendChild(seg);
+      }
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td><span class="sw" style="background:var(${color})"></span></td>
+        <td>${label}<span class="desc">${desc}</span></td>
+        <td class="r num">${money(v)}</td><td class="r num">${(share * 100).toFixed(1)}%</td>`;
+      body.appendChild(tr);
+    }
+  }
+
+  function renderTiers(r) {
+    const row = (label, g, cls) => `<tr class="${cls || ""}"><td>${label}</td>
+      <td class="r num">${fmtInt.format(Math.round(g.packages))}</td>
+      <td class="r num">${g.packages ? money(g.fair / g.packages) : "–"}</td>
+      <td class="r num">${money(g.fair)}</td><td class="r num">${money(g.floor)}</td><td class="r num">${money(g.ceiling)}</td></tr>`;
+    $("tiers").innerHTML = M.TIERS.map((t) => row(TIER_LABEL[t], r.byTier[t])).join("")
+      + row("Total", r.total, "total") + row("of which dormant", r.dormant, "sub");
+  }
+
+  const search = $("pkg-search");
+  search.addEventListener("input", renderPackages);
+  function renderPackages() {
+    if (!last) return;
+    const D = lastData;
+    const q = search.value.trim().toLowerCase().replace(/[-_.]+/g, "-");
+    let list = last.packages;
+    if (q) {
+      list = list.filter((p) => D.name[p.i].includes(q));
+      list.sort((a, b) => (D.name[b.i].startsWith(q) - D.name[a.i].startsWith(q)) || b.fair - a.fair);
+    } else {
+      list = [...list].sort((a, b) => b.fair - a.fair);
+    }
+    const manifestMode = state.source === "manifest";
+    const limit = manifestMode && state.mf.showAll ? list.length : 15;
+    const shown = list.slice(0, limit);
+    $("pkg-count").textContent = q
+      ? `${fmtInt.format(list.length)} match${list.length === 1 ? "" : "es"}${list.length > limit ? `, showing ${limit}` : ""}`
+      : list.length > limit ? `Showing the ${limit} highest-priced of ${fmtInt.format(list.length)}` : `All ${fmtInt.format(list.length)} packages`;
+    const more = $("pkg-more");
+    more.hidden = !manifestMode || list.length <= 15;
+    more.textContent = state.mf.showAll ? "Show the 15 highest-priced only" : `Show all ${fmtInt.format(list.length)} packages`;
+    $("pkgs").innerHTML = shown.length ? shown.map((p) => `<tr>
+        <td>${esc(D.name[p.i])}${D.unlisted && D.unlisted[p.i] ? ' <span class="tag unlisted">not in dataset</span>' : ""}${p.dormant ? ' <span class="tag dormant">dormant</span>' : ""}${p.native ? ' <span class="tag">native</span>' : ""}</td>
+        <td>${TIER_LABEL[p.tier]}</td>
+        <td class="r num">${p.E.toFixed(2)}</td>
+        <td class="r num">${money(p.floor)}</td><td class="r num">${money(p.fair)}</td><td class="r num">${money(p.ceiling)}</td></tr>`).join("")
+      : `<tr><td colspan="6">No package matches “${esc(search.value)}”. Try a shorter name${manifestMode ? "" : ", or raise “Top PyPI packages in scope”"}.</td></tr>`;
+  }
+  $("pkg-more").addEventListener("click", () => { state.mf.showAll = !state.mf.showAll; renderPackages(); });
+
+  // ---------- manifests ----------
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const SAMPLE = {
+    name: "sample-risk-service/requirements.txt",
+    text: [
+      "# Example only: a risk analytics service",
+      "fastapi==0.115.4", "uvicorn[standard]==0.32.0", "pydantic==2.9.2", "sqlalchemy==2.0.36",
+      "psycopg2-binary==2.9.10", "pandas==2.2.3", "numpy==2.1.3", "scipy==1.14.1", "requests==2.32.3",
+      "boto3==1.35.54", "cryptography==43.0.3", "pyjwt==2.9.0", "openpyxl==3.1.5", "celery==5.4.0",
+      "redis==5.2.0", "python-dateutil==2.9.0", "structlog==24.4.0", "quantlib==1.36",
+      "internal-risk-lib==3.2.0",
+    ].join("\n"),
+  };
+
+  function addManifest(name, text) {
+    try {
+      const parsed = MP.parseManifest(name, text);
+      state.mf.files.push({ id: state.mf.nextId++, name, ...parsed });
+      showError("");
+      if (!parsed.packages.length) showError(`No packages found in ${name}. Check that it is a supported manifest.`);
+    } catch (err) {
+      showError(`Could not read ${name}: ${err.message}`);
+    }
+    state.mf.showAll = false;
+    render();
+  }
+  function showError(msg) { $("mf-error").hidden = !msg; $("mf-error").textContent = msg; }
+
+  async function addFiles(fileList) {
+    for (const f of fileList) {
+      if (f.size > 20 * 1024 * 1024) { showError(`${f.name} is larger than 20 MB; split it or trim it first.`); continue; }
+      addManifest(f.name, await f.text());
+    }
+  }
+
+  // Merge all files, match against the dataset, build a columnar portfolio.
+  function manifestPortfolio() {
+    const merged = new Map();
+    let local = 0, system = 0;
+    for (const f of state.mf.files) {
+      local += f.skippedLocal; system += f.skippedSystem;
+      for (const p of f.packages) {
+        const prev = merged.get(p.name);
+        if (!prev || (prev === "conda" && p.source === "pypi")) merged.set(p.name, p.source);
+      }
+    }
+    const matched = [], unlisted = [];
+    let condaSkipped = 0;
+    for (const [name, source] of merged) {
+      const i = INDEX.get(name);
+      if (i !== undefined) matched.push(i);
+      else if (source === "conda") condaSkipped++;
+      else unlisted.push(name);
+    }
+    const cols = ["dl", "rel", "msr", "nat", "cop", "ina", "a12", "a36"];
+    const data = { name: [], unlisted: [] };
+    cols.forEach((c) => (data[c] = []));
+    matched.sort((a, b) => a - b).forEach((i) => {
+      data.name.push(DATA.name[i]); data.unlisted.push(false);
+      cols.forEach((c) => data[c].push(DATA[c][i]));
+    });
+    if (state.mf.includeUnlisted) unlisted.forEach((n) => {
+      data.name.push(n); data.unlisted.push(true);
+      cols.forEach((c) => data[c].push(UNLISTED_ROW[c]));
+    });
+    return { total: merged.size, matched: matched.length, unlisted, condaSkipped, local, system, data: state.mf.files.length ? data : null };
+  }
+
+  function renderManifestPanel(mf) {
+    const files = state.mf.files;
+    $("mf-files-wrap").hidden = !files.length;
+    $("mf-options").hidden = !files.length;
+    $("mf-clear").hidden = !files.length;
+    $("mf-files").innerHTML = files.map((f) => `<tr>
+        <td>${esc(f.name)}</td><td>${esc(f.format)}</td>
+        <td class="r num">${fmtInt.format(f.packages.length)}</td>
+        <td class="r num">${f.skippedLocal + f.skippedSystem ? fmtInt.format(f.skippedLocal + f.skippedSystem) : "–"}</td>
+        <td class="r"><button type="button" class="x" data-remove="${f.id}" aria-label="Remove ${esc(f.name)}">×</button></td></tr>`).join("");
+    document.querySelectorAll("button[data-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === state.mf.mode)));
+    $("mf-unlisted").checked = state.mf.includeUnlisted;
+
+    const sum = $("mf-summary"), chips = $("mf-unlisted-list");
+    sum.hidden = !files.length; chips.hidden = !files.length || !mf.unlisted.length;
+    if (!files.length) return;
+    const parts = [`${fmtInt.format(mf.total)} unique packages`, `${fmtInt.format(mf.matched)} found in the dataset`];
+    if (mf.unlisted.length) parts.push(`${fmtInt.format(mf.unlisted.length)} not in the dataset${state.mf.includeUnlisted ? ", priced as active standard-tier packages with no advisory history" : ", left out"}`);
+    if (mf.condaSkipped + mf.system) parts.push(`${fmtInt.format(mf.condaSkipped + mf.system)} conda system packages skipped`);
+    if (mf.local) parts.push(`${fmtInt.format(mf.local)} local or editable packages skipped`);
+    sum.textContent = parts.join(" · ") + ".";
+    const MAX = 40;
+    chips.innerHTML = `<span class="opt-label">Not in the dataset${mf.unlisted.length > MAX ? ` (first ${MAX})` : ""}: private, niche, misspelled or outside the top ${fmtInt.format(N_ALL)}</span>` +
+      mf.unlisted.slice(0, MAX).map((n) => `<span class="tag unlisted">${esc(n)}</span>`).join("");
+  }
+
+  $("mf-files").addEventListener("click", (e) => {
+    const id = e.target.dataset && e.target.dataset.remove;
+    if (!id) return;
+    state.mf.files = state.mf.files.filter((f) => String(f.id) !== id);
+    render();
+  });
+  $("mf-file").addEventListener("change", async (e) => { await addFiles(e.target.files); e.target.value = ""; });
+  const drop = $("drop");
+  ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove("over")));
+  drop.addEventListener("drop", (e) => { e.preventDefault(); if (e.dataTransfer && e.dataTransfer.files.length) addFiles(e.dataTransfer.files); });
+  $("mf-paste-toggle").addEventListener("click", (e) => {
+    const box = $("mf-paste"); box.hidden = !box.hidden;
+    e.target.setAttribute("aria-expanded", String(!box.hidden));
+    if (!box.hidden) $("mf-text").focus();
+  });
+  $("mf-add").addEventListener("click", () => {
+    const text = $("mf-text").value;
+    if (!text.trim()) { showError("Paste a manifest or a list of packages first."); return; }
+    const n = state.mf.files.filter((f) => f.name.startsWith("Pasted")).length + 1;
+    addManifest(`Pasted list ${n}`, text);
+    $("mf-text").value = "";
+  });
+  $("mf-sample").addEventListener("click", () => addManifest(SAMPLE.name, SAMPLE.text));
+  $("mf-clear").addEventListener("click", () => { state.mf.files = []; showError(""); render(); });
+  $("mf-unlisted").addEventListener("change", (e) => { state.mf.includeUnlisted = e.target.checked; render(); });
+  document.querySelectorAll("button[data-mode]").forEach((b) => b.addEventListener("click", () => { state.mf.mode = b.dataset.mode; render(); }));
+  document.querySelectorAll("button[data-source]").forEach((b) => b.addEventListener("click", () => {
+    state.source = b.dataset.source; state.mf.showAll = false; syncControls(); render();
+  }));
+
+  // ---------- tooltip on the module bar ----------
+  const tip = $("tip");
+  $("stack").addEventListener("mousemove", (e) => {
+    const t = e.target.dataset && e.target.dataset.tip;
+    if (!t) { tip.hidden = true; return; }
+    tip.textContent = t; tip.hidden = false;
+    const x = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
+    tip.style.left = x + "px"; tip.style.top = e.clientY + 16 + "px";
+  });
+  $("stack").addEventListener("mouseleave", () => (tip.hidden = true));
+
+  applyScenario("base");
+})();
+</script>

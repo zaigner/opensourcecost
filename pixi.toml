@@ -11,6 +11,7 @@ cost = "python -m oss_cost"
 # Vendor pricing for a portfolio (see docs/pricing-model.md)
 build-portfolio = "python -m oss_cost.portfolio"
 price = "python -m oss_cost.pricing"
+build-calculator = "python -m oss_cost.calculator"
 
 [dependencies]
 python = ">=3.12,<3.13"

@@ -116,6 +116,8 @@ pixi run price              # per-package quote and low/base/high scenarios
 ```
 
 - Method, results and negotiation levers: [docs/pricing-model.md](docs/pricing-model.md)
+- Interactive calculator: https://claude.ai/artifact/NjrrSZLae5wTKbj8pkChD9 (source `gsib-pricing-calculator.html`, rebuilt with `pixi run build-calculator`)
+- Price your own dependencies: upload any manifest or lock file to the calculator, or run `pixi run build-portfolio --packages uv.lock --out data/mine.csv` then `pixi run price --portfolio data/mine.csv` for live data on every package
 - Assumptions (edit these): [assumptions/gsib_vendor.toml](assumptions/gsib_vendor.toml)
 - Outputs: `data/proxy_portfolio.csv`, `results/gsib_quote.csv`, `results/gsib_quote_summary.json`
 

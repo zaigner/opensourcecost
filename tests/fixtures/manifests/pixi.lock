@@ -1,0 +1,20 @@
+version: 6
+environments:
+  default:
+    packages:
+      linux-64:
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/numpy-2.1.0-py312h.conda
+packages:
+- conda: https://conda.anaconda.org/conda-forge/linux-64/bzip2-1.0.8-hda65f42_10.conda
+  sha256: abc
+  purls: []
+- conda: https://conda.anaconda.org/conda-forge/linux-64/numpy-2.1.0-py312h.conda
+  purls:
+  - pkg:pypi/numpy?source=hash-mapping
+- pypi: https://files.pythonhosted.org/packages/xx/requests-2.32.3-py3-none-any.whl
+  name: requests
+  version: 2.32.3
+  requires_dist:
+  - idna<4,>=2.5
+- pypi: .
+  name: oss-cost

@@ -1,0 +1,14 @@
+[[source]]
+url = "https://pypi.org/simple"
+name = "pypi"
+
+[packages]
+flask = "*"
+sqlalchemy = {version = ">=2", extras = ["asyncio"]}
+mine = {path = ".", editable = true}
+
+[dev-packages]
+pytest-cov = "*"
+
+[requires]
+python_version = "3.12"

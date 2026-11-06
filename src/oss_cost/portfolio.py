@@ -5,7 +5,7 @@ history, native code, licence, development status) and the GitHub Advisory Datab
 (security advisories, last 36 months).
 
     pixi run build-portfolio                          # proxy: top 5,000 PyPI packages
-    pixi run build-portfolio --packages inventory.txt # your own inventory (one name per line)
+    pixi run build-portfolio --packages uv.lock       # your inventory: any manifest or lock file
 """
 
 import argparse
@@ -22,6 +22,7 @@ import httpx
 
 from oss_cost.collect import parse_dt
 from oss_cost.config import Settings
+from oss_cost.manifest import read_manifest
 
 TOP_PACKAGES_URL = "https://hugovk.github.io/top-pypi-packages/top-pypi-packages.min.json"
 GITHUB_API = "https://api.github.com"
@@ -54,13 +55,13 @@ def normalize(name: str) -> str:
 
 
 def read_inventory(path: Path) -> list[str]:
-    """One package per line; accepts requirements-style lines such as `requests==2.32.3`."""
-    names = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.split("#", 1)[0].strip()
-        if m := re.match(r"^([A-Za-z0-9][A-Za-z0-9._-]*)", line):
-            names.append(normalize(m[1]))
-    return list(dict.fromkeys(names))
+    """Package names from any supported manifest (see oss_cost.manifest)."""
+    m = read_manifest(path)
+    print(
+        f"  - {path.name}: {m.format}, {len(m.packages)} packages"
+        f" ({m.skipped_local} local, {m.skipped_system} system skipped)"
+    )
+    return m.names()
 
 
 def summarize_pypi(data: dict[str, Any], now: datetime) -> dict[str, Any]:
@@ -213,7 +214,11 @@ def build_rows(
 
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="build-portfolio", description=__doc__.split("\n\n")[0])
-    p.add_argument("--packages", type=Path, help="Inventory file, one package per line")
+    p.add_argument(
+        "--packages",
+        type=Path,
+        help="Manifest or lock file (requirements, pyproject, uv.lock, ...)",
+    )
     p.add_argument("--top", type=int, default=5000, help="Proxy size when no inventory given")
     p.add_argument("--out", type=Path, default=Path("data/proxy_portfolio.csv"))
     p.add_argument("--cache-dir", type=Path, default=Path("data/cache"))
