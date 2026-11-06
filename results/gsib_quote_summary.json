@@ -1,0 +1,149 @@
+{
+  "base": {
+    "total": {
+      "packages": 4999,
+      "cost_floor": 4870029,
+      "fair_price": 7230920,
+      "inhouse_ceiling": 14498691,
+      "fair_price_per_package": 1446.47
+    },
+    "by_tier": {
+      "critical": {
+        "packages": 297,
+        "cost_floor": 1020829,
+        "fair_price": 1586101,
+        "inhouse_ceiling": 2473480,
+        "fair_price_per_package": 5340.41
+      },
+      "important": {
+        "packages": 1574,
+        "cost_floor": 1788751,
+        "fair_price": 2628018,
+        "inhouse_ceiling": 5870532,
+        "fair_price_per_package": 1669.64
+      },
+      "standard": {
+        "packages": 3128,
+        "cost_floor": 2060449,
+        "fair_price": 3016801,
+        "inhouse_ceiling": 6154679,
+        "fair_price_per_package": 964.45
+      }
+    },
+    "dormant": {
+      "packages": 982,
+      "cost_floor": 1427829,
+      "fair_price": 2189401,
+      "inhouse_ceiling": 5268994,
+      "fair_price_per_package": 2229.53
+    },
+    "fair_price_by_module": {
+      "curation_and_compliance": 1213264,
+      "vulnerability_response": 189188,
+      "maintainer_of_last_resort": 1393658,
+      "bank_backports_and_support": 2964184,
+      "service_fixed": 861345,
+      "upstream_funding": 609284
+    },
+    "vendor_fte_equivalent": 17.6,
+    "fair_as_share_of_ceiling": 0.499
+  },
+  "low": {
+    "total": {
+      "packages": 4999,
+      "cost_floor": 3323389,
+      "fair_price": 4708046,
+      "inhouse_ceiling": 13423422,
+      "fair_price_per_package": 941.8
+    },
+    "by_tier": {
+      "critical": {
+        "packages": 297,
+        "cost_floor": 634343,
+        "fair_price": 942469,
+        "inhouse_ceiling": 1995956,
+        "fair_price_per_package": 3173.29
+      },
+      "important": {
+        "packages": 1574,
+        "cost_floor": 1264357,
+        "fair_price": 1794650,
+        "inhouse_ceiling": 5479680,
+        "fair_price_per_package": 1140.18
+      },
+      "standard": {
+        "packages": 3128,
+        "cost_floor": 1424689,
+        "fair_price": 1970927,
+        "inhouse_ceiling": 5947786,
+        "fair_price_per_package": 630.09
+      }
+    },
+    "dormant": {
+      "packages": 982,
+      "cost_floor": 1042381,
+      "fair_price": 1491536,
+      "inhouse_ceiling": 5284674,
+      "fair_price_per_package": 1518.88
+    },
+    "fair_price_by_module": {
+      "curation_and_compliance": 718404,
+      "vulnerability_response": 112617,
+      "maintainer_of_last_resort": 846548,
+      "bank_backports_and_support": 1983336,
+      "service_fixed": 803431,
+      "upstream_funding": 243707
+    },
+    "vendor_fte_equivalent": 12.6,
+    "fair_as_share_of_ceiling": 0.351
+  },
+  "high": {
+    "total": {
+      "packages": 4999,
+      "cost_floor": 9172346,
+      "fair_price": 14955140,
+      "inhouse_ceiling": 16625225,
+      "fair_price_per_package": 2991.63
+    },
+    "by_tier": {
+      "critical": {
+        "packages": 297,
+        "cost_floor": 1936053,
+        "fair_price": 3316466,
+        "inhouse_ceiling": 3311739,
+        "fair_price_per_package": 11166.55
+      },
+      "important": {
+        "packages": 1574,
+        "cost_floor": 3402883,
+        "fair_price": 5537172,
+        "inhouse_ceiling": 6830806,
+        "fair_price_per_package": 3517.9
+      },
+      "standard": {
+        "packages": 3128,
+        "cost_floor": 3833410,
+        "fair_price": 6101502,
+        "inhouse_ceiling": 6482679,
+        "fair_price_per_package": 1950.61
+      }
+    },
+    "dormant": {
+      "packages": 982,
+      "cost_floor": 2748619,
+      "fair_price": 4544585,
+      "inhouse_ceiling": 5373299,
+      "fair_price_per_package": 4627.89
+    },
+    "fair_price_by_module": {
+      "curation_and_compliance": 2840113,
+      "vulnerability_response": 659401,
+      "maintainer_of_last_resort": 3107085,
+      "bank_backports_and_support": 6627381,
+      "service_fixed": 1111875,
+      "upstream_funding": 609284
+    },
+    "vendor_fte_equivalent": 29.1,
+    "fair_as_share_of_ceiling": 0.9
+  }
+}

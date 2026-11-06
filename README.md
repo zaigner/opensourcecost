@@ -106,6 +106,19 @@ Results are written to `results/<package>.json`. The Python port was checked end
 
 Suggested next step: run the script on 10–20 top packages to replace the illustrative tier counts in the fair-share invoice with measured averages.
 
+## Vendor pricing for a GSIB portfolio
+
+The model was extended to price a vendor service that maintains a bank's whole Python portfolio, with a floor, fair price and in-house ceiling for every package. On the top 5,000 PyPI packages the fair price is about **$7.2M a year** ($1,446 per package; range $4.7M–$15.0M) against a $14.5M in-house alternative.
+
+```bash
+pixi run build-portfolio    # proxy portfolio: top 5,000 PyPI packages + PyPI + GitHub advisories
+pixi run price              # per-package quote and low/base/high scenarios
+```
+
+- Method, results and negotiation levers: [docs/pricing-model.md](docs/pricing-model.md)
+- Assumptions (edit these): [assumptions/gsib_vendor.toml](assumptions/gsib_vendor.toml)
+- Outputs: `data/proxy_portfolio.csv`, `results/gsib_quote.csv`, `results/gsib_quote_summary.json`
+
 ## Sources
 
 - Hoffmann, Nagle & Zhou, "The Value of Open Source Software," HBS working paper 24-038 (2024); critique: https://openpath.quest/2024/questioning-the-value-of-open-source-software/ ; summary: https://simonwillison.net/2025/Mar/26/value-of-open-source/
