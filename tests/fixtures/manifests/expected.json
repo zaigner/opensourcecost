@@ -1,0 +1,14 @@
+{
+  "requirements.txt": {"pypi": ["cryptography", "django", "my-proj", "numpy", "requests", "uvicorn", "zope-interface"], "conda": []},
+  "pyproject.toml": {"pypi": ["attrs", "black", "furo", "httpx", "mypy", "pydantic", "pytest", "rich", "ruff", "sphinx"], "conda": ["openssl", "pandas"]},
+  "pixi.toml": {"pypi": ["hypothesis", "requests"], "conda": ["libgdal", "numpy", "pytest"]},
+  "Pipfile": {"pypi": ["flask", "pytest-cov", "sqlalchemy"], "conda": []},
+  "Pipfile.lock": {"pypi": ["certifi", "flask", "pytest"], "conda": []},
+  "poetry.lock": {"pypi": ["certifi", "charset-normalizer"], "conda": []},
+  "uv.lock": {"pypi": ["anyio", "idna"], "conda": []},
+  "environment.yml": {"pypi": ["requests", "rich"], "conda": ["libblas", "numpy", "pandas", "pip", "torch"]},
+  "setup.cfg": {"pypi": ["click", "importlib-metadata", "pyyaml"], "conda": []},
+  "setup.py": {"pypi": ["jinja2", "six", "tox"], "conda": []},
+  "pixi.lock": {"pypi": ["numpy", "requests"], "conda": []},
+  "conda-lock.yml": {"pypi": ["requests"], "conda": ["numpy", "zlib"]}
+}

@@ -1,0 +1,14 @@
+name: analysis
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - numpy>=1.26  # arrays
+  - conda-forge::pandas
+  - pytorch
+  - libblas
+  - pip
+  - pip:
+      - requests==2.32.3
+      - -e ./local
+      - "rich>=13"

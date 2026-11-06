@@ -161,11 +161,32 @@ The curation module lands close to the only per-component benchmark. The rest of
 
 **What the bank controls:** fewer version lines in production and fewer dormant dependencies cut the price directly. Removing half the dormant packages saves about $1.1M a year, and running one fewer version line in every tier saves about $1.1M. Both also reduce real risk.
 
+## Pricing your own manifests
+
+The [calculator](https://claude.ai/artifact/NjrrSZLae5wTKbj8pkChD9) accepts any number of Python manifests and prices the packages they name. Files are parsed in the browser and are not uploaded.
+
+| Supported | Notes |
+|---|---|
+| `requirements*.txt`, `*.in`, `pip freeze` output | Options, hashes, URLs and local paths are skipped; `#egg=` names are kept |
+| `pyproject.toml` | PEP 621 dependencies and extras, dependency groups, Poetry, PDM, uv and pixi tables |
+| `pixi.toml`, `environment.yml` | Conda names are kept only when they are Python packages in the dataset; a few are mapped (pytorch → torch) |
+| `Pipfile`, `setup.cfg`, `setup.py` | `setup.py` is read with a pattern match, not executed |
+| `uv.lock`, `poetry.lock`, `pdm.lock`, `Pipfile.lock`, `pixi.lock`, `conda-lock.yml` | **Recommended**: lock files include transitive dependencies, which the vendor also maintains. pixi.lock conda entries count only when they map to a PyPI package |
+
+Packages are matched against the top 15,000 PyPI packages (`data/reference_portfolio.csv`). A package outside that list (private, niche or misspelled) is priced as an active standard-tier package with no advisory history, and is flagged; it can be left out.
+
+Two ways to price a manifest:
+
+- **Share of the bank-wide program** (default): the manifest's packages carry fixed costs at the rate the full 5,000-package program sets. Use it to ask what one application's dependencies contribute to the bank's bill.
+- **Standalone engagement**: the manifest carries all of the vendor's fixed costs (account management, on-call, audit support, platform). A small manifest then looks expensive, because a dedicated service for a few dozen packages is.
+
+For live data on every package, including those outside the top 15,000, use the command line: it accepts the same formats.
+
 ## Using it on the bank's inventory
 
 ```bash
-# inventory.txt: one package per line (requirements-style lines are fine)
-pixi run build-portfolio --packages inventory.txt --out data/bank_portfolio.csv
+# any supported manifest or lock file; for several, concatenate requirements or run once per file
+pixi run build-portfolio --packages uv.lock --out data/bank_portfolio.csv
 # optionally fill bank_criticality / version_lines in data/bank_portfolio.csv
 pixi run price --portfolio data/bank_portfolio.csv --out results/bank_quote.csv
 ```
