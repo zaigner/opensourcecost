@@ -1,0 +1,125 @@
+# =============================================================================
+# Pricing assumptions: a vendor maintaining Python open source packages for a GSIB
+# =============================================================================
+# Every number in this file is an assumption. Change it here, or override it for a
+# scenario in the [scenarios.*] tables at the bottom. Rationale: docs/pricing-model.md.
+#
+# The model prices each package three ways:
+#   floor   = vendor cost to serve this bank (shared work split across the vendor's clients)
+#   fair    = floor marked up for risk and vendor margin (upstream funding passed at cost)
+#   ceiling = the bank doing the same work alone, in house, with no one to share it with
+# A fair contract price sits at or near "fair" and well below "ceiling".
+
+[engagement]
+vendor_clients = 30          # comparable enterprise clients the vendor serves; shared work is split across them
+bank_weight = 2.0            # a GSIB carries twice an average client's share (scale, stricter SLAs, audit load)
+
+[rates]
+# Vendor: BLS median software developer, fully loaded = $104.08/h (base research, results/urllib3.json),
+# x 1.25 premium for supply-chain security specialists.
+vendor_hourly_cost = 130.0
+# Bank: in-house GSIB engineer, fully loaded (NYC/London pay, bank overheads). Used only for the ceiling.
+bank_hourly_cost = 175.0
+hours_per_fte = 1824         # 152 h/person-month x 12 (COCOMO II convention, as in the base research)
+
+[classification]
+# Tiers follow the base research rule, applied to monthly PyPI downloads.
+critical_min_downloads = 100_000_000
+important_min_downloads = 5_000_000
+# Dormant: no release in this many months (or classifier "Development Status :: 7 - Inactive").
+# The vendor becomes maintainer of last resort: it must write fixes itself, not wait for upstream.
+dormant_months = 24
+# A bank-supplied criticality ("high", "medium", "low") can override the download tier
+# in the portfolio CSV. high -> critical, medium -> important, low -> standard.
+
+# -----------------------------------------------------------------------------
+# Work the vendor does once per package and shares across all clients that use it
+# -----------------------------------------------------------------------------
+[shared_hours]
+monitoring = 1.0                   # per year: maintainer/ownership changes, repo health, typosquats, licence drift
+intake_per_release_pure = 0.25     # per release: diff review, malware scan, rebuild from source, test, sign, publish
+intake_per_release_native = 1.5    # per release, compiled code: multi-platform wheel builds, toolchain upkeep
+max_billable_releases = 52         # cap: very fast-moving packages (e.g. botocore) are handled by automation
+compliance = 0.5                   # per year: SBOM, provenance/SLSA attestation, licence review
+copyleft_review = 2.0              # per year extra, GPL/AGPL licensed packages: legal review of use
+advisory_response = 3.0            # per advisory: triage, applicability, VEX statement, rebuild, test, publish
+advisory_own_fix = 24.0            # per advisory, dormant packages only: write, test and carry the fix
+last_resort = { critical = 120.0, important = 40.0, standard = 12.0 }  # per year, dormant packages: new Python versions, dependency breakage
+
+# -----------------------------------------------------------------------------
+# Work done for this bank only (not shared)
+# -----------------------------------------------------------------------------
+[dedicated_hours]
+version_lines = { critical = 3.0, important = 2.0, standard = 1.5 }   # versions the bank keeps in production
+backport_per_line = 6.0            # per patch event, per version line beyond the newest
+max_backport_events = 12           # fixes are bundled into at most monthly patch releases per line
+native_backport_multiplier = 1.5   # compiled code costs more to backport
+tickets_per_year = { critical = 2.0, important = 1.0, standard = 0.25 }
+hours_per_ticket = 2.0
+evidence = 0.25                    # per year: bank-specific audit evidence, DORA register / third-party-risk data
+
+# -----------------------------------------------------------------------------
+# How many of the vendor's clients share each package's work
+# -----------------------------------------------------------------------------
+[adoption]
+# Share of the vendor's clients that also use a package in this tier.
+share = { critical = 0.9, important = 0.5, standard = 0.2 }
+dormant_multiplier = 0.5           # fewer clients still depend on dormant packages
+# Bank's share of shared work = bank_weight / (bank_weight + other clients using the package)
+
+# -----------------------------------------------------------------------------
+# Expected security advisories per package per year
+# -----------------------------------------------------------------------------
+[advisories]
+weight_last_12mo = 0.6     # blend of the last 12 months and the 36-month average (rates have risen sharply)
+credibility = 0.75         # Z: weight on a package's own history; (1 - Z) on its tier average
+# Tier averages of the blended rate, measured on the top 5,000 PyPI packages (Nov 2026).
+prior = { critical = 1.23, important = 0.27, standard = 0.11 }
+trend_multiplier = 1.0     # >1 to price in continued growth in advisory volume
+
+# -----------------------------------------------------------------------------
+# Funding passed through to upstream maintainers (links to the base research)
+# -----------------------------------------------------------------------------
+[upstream_funding]
+enabled = true
+# Annual sustaining cost by tier from the base research (responsible-staffing standard).
+asc = { critical = 257304.0, important = 121406.0, standard = 30476.0 }
+commercial_share = 0.8     # alpha: share of upstream cost owed by commercial users
+paying_pool = 2000         # Forbes Global 2000
+bank_size_weight = 5.0     # a GSIB vs an average Global 2000 company
+# Bank's payment per package = alpha x ASC x bank_size_weight / paying_pool. Dormant packages: 0.
+
+# -----------------------------------------------------------------------------
+# Portfolio-level costs dedicated to this bank (vendor side), allocated to packages pro rata
+# -----------------------------------------------------------------------------
+[fixed]
+customer_success_fte = 0.5   # technical account management, reporting, quarterly reviews
+security_on_call_fte = 1.0   # bank's share of the vendor's 24x7 rotation behind critical-CVE SLAs
+compliance_audit_fte = 0.5   # regulatory exams, third-party-risk questionnaires, SOC 2 evidence
+platform_infra = 60000.0     # private package index, mirrors, build capacity for this bank
+onboarding_amortized = 20000.0  # inventory, integration and onboarding, spread over the contract
+
+# The bank's own fixed costs if it did the work alone (ceiling only)
+[inhouse]
+fixed_fte = 6.0              # 24x7 on-call rotation (5) + team lead (1)
+platform_infra = 150000.0    # build farm, signing, private index, scanning tools
+
+[pricing]
+risk_load = { critical = 0.15, important = 0.10, standard = 0.05 }  # SLA credits, indemnity, liability
+target_margin = 0.30         # vendor gross margin on labour and fixed costs (not on upstream pass-through)
+
+# =============================================================================
+# Scenarios: dotted keys override the base values above
+# =============================================================================
+[scenarios.low]
+"engagement.vendor_clients" = 50
+"pricing.target_margin" = 0.25
+"dedicated_hours.version_lines" = { critical = 2.0, important = 1.5, standard = 1.0 }
+"upstream_funding.bank_size_weight" = 2.0
+
+[scenarios.high]
+"engagement.vendor_clients" = 15
+"pricing.target_margin" = 0.35
+"advisories.trend_multiplier" = 1.5
+"dedicated_hours.version_lines" = { critical = 4.0, important = 3.0, standard = 2.0 }
+"rates.vendor_hourly_cost" = 160.0

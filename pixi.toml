@@ -8,6 +8,9 @@ platforms = ["linux-64", "linux-aarch64", "win-64", "osx-64", "osx-arm64"]
 [tasks]
 # pixi run cost urllib3 --annual-funding 15525
 cost = "python -m oss_cost"
+# Vendor pricing for a portfolio (see docs/pricing-model.md)
+build-portfolio = "python -m oss_cost.portfolio"
+price = "python -m oss_cost.pricing"
 
 [dependencies]
 python = ">=3.12,<3.13"
